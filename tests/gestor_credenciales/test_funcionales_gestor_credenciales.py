@@ -17,6 +17,68 @@ class TestFuncionalesGestorCredenciales(unittest.TestCase):
         # Implementar según TDD
         self.fail()
 
+    def test_eliminar_credencial_existente(self):
+        clave = "claveMaestraSegura123!"
+        self.gestor.añadir_credencial(clave, "GitHub", "user1", "PasswordSegura123!")
+        resultado = self.gestor.eliminar_credencial(clave, "GitHub", "user1")
+        self.assertIsNone(resultado)
+
+        with self.assertRaises(Exception):
+            self.gestor.recuperar_credencial(clave, "GitHub", "user1")
+
+    def test_eliminar_credencial_inexistente(self):
+        clave = "claveMaestraSegura123!"
+
+        with self.assertRaises(Exception):
+            self.gestor.eliminar_credencial(clave, "GitLab", "user1")
+
+    def test_eliminar_credencial_clave_incorrecta(self):
+        clave = "claveMaestraSegura123!"
+
+        self.gestor.añadir_credencial(clave, "GitHub", "user1", "PasswordSegura123!")
+
+        with self.assertRaises(ErrorAutenticacion):
+            self.gestor.eliminar_credencial("abc", "GitHub", "user1")
+
+    def test_eliminar_credencial_valores_invalidos(self):
+        clave_valida = "claveMaestraSegura123!"
+
+        #Lo que es inválido es el uso de valores que no sean de tipo string
+        casos_invalidos = [
+            ("", "user1"),
+            ("GitHub", ""),
+            (None, "user1"),
+            ("GitHub", None),
+            (123, "user1"),
+            ("GitHub", 456),
+        ]
+
+        for servicio, usuario in casos_invalidos:
+            with self.assertRaises(Exception):
+                self.gestor.eliminar_credencial(clave_valida, servicio, usuario)
+
+        claves_invalidas = [
+            "",
+            None,
+            123,
+        ]
+
+        for clave in claves_invalidas:
+            with self.assertRaises(Exception):
+                self.gestor.eliminar_credencial(clave, "GitHub", "user1")
+
+    def test_eliminar_credencial_usuario_no_existente(self):
+        clave = "claveMaestraSegura123!"
+        self.gestor.añadir_credencial(clave, "GitHub", "user1", "PasswordSegura123!")
+
+        with self.assertRaises(Exception):
+            self.gestor.eliminar_credencial(clave, "GitHub", "user2")
+
+        self.assertEqual(
+            self.gestor.recuperar_credencial(clave, "GitHub", "user1"),
+            "PasswordSegura123!"
+        )
+
     def test_listar_servicios(self):
         clave = "claveMaestraSegura123!"
 
