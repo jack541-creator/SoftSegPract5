@@ -46,6 +46,39 @@ class TestFuncionalesGestorCredenciales(unittest.TestCase):
         # autenticación
         with self.assertRaises(ErrorAutenticacion):
             self.gestor.listar_servicios("claveIncorrecta")
+            
+    def test_listar_usuarios(self):
+        clave = "claveMaestraSegura123!"
+
+        # Comprobación con lista vacía
+        usuarios = self.gestor.listar_usuarios(clave)
+        self.assertIsInstance(usuarios, list)
+        self.assertIsNotNone(usuarios)
+        self.assertEqual(usuarios, [])
+        
+        # Añadimos usuarios
+        self.gestor.añadir_credencial(clave, "GitHub", "usuario1", "clave1")
+        self.gestor.añadir_credencial(clave, "Eduroam", "usuario2", "clave2")
+        self.gestor.añadir_credencial(clave, "GitHub", "usuario3", "clave3")
+        usuarios = self.gestor.listar_usuarios(clave)
+        self.assertCountEqual(usuarios, ["usuario1", "usuario2", "usuario3"])
+        
+
+        # Eliminamos usuarios
+        self.gestor.eliminar_credencial(clave, "Eduroam", "usuario2")
+        usuarios = self.gestor.listar_usuarios(clave)
+        self.assertCountEqual(usuarios, ["usuario1", "usuario3"])
+        
+
+        # Eliminamos todo
+        self.gestor.eliminar_credencial(clave, "GitHub", "usuario1")
+        self.gestor.eliminar_credencial(clave, "GitHub", "usuario3")
+        usuarios = self.gestor.listar_usuarios(clave)
+        self.assertEqual(usuarios, [])
+        
+        # Error de autenticación
+        with self.assertRaises(ErrorAutenticacion):
+            self.gestor.listar_usuarios("claveIncorrecta")
 
 if __name__ == "__main__":
     unittest.main()

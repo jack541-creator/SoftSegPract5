@@ -49,7 +49,12 @@ class GestorCredenciales:
     def listar_servicios(self, clave_maestra: str) -> list:
         """Lista todos los servicios almacenados."""
         pass
-
+    
+    @ensure(lambda result: isinstance(result, list))
+    def listar_usuarios(self, clave_maestra:str) -> list:
+        """Lista todos los usuarios en la base de datos."""
+        pass
+        
     def _hash_clave(self, clave: str) -> str:
         """Hashea una clave usando bcrypt."""
         return bcrypt.hashpw(clave.encode('utf-8'), bcrypt.gensalt())
