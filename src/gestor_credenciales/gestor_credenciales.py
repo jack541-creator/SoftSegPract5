@@ -85,11 +85,11 @@ class GestorCredenciales:
     @require(lambda nuevaContraseña: isinstance(nuevaContraseña, str))
     @ensure(lambda result: isinstance(result, str))
     def cambiar_credenciales(self, clave_maestra: str, servicio: str, usuario: str, nuevoServicio: str, nuevoUsuario: str, nuevaContraseña: str) -> str:
-        out = None
+        out = "Error"
         
         if not clave_maestra:
             out = "Error: clave maestra vacía"
-        elif self._hash_clave(clave_maestra) != self._clave_maestra_hashed:
+        elif not self._verificar_clave(clave_maestra, self._clave_maestra_hashed):
             out = "Error: clave maestra incorrecta"
         elif not servicio:
             out = "Error: servicio vacio"
@@ -107,12 +107,11 @@ class GestorCredenciales:
             out = "Error: nueva contraseña vacia"
         elif len(nuevaContraseña) < 7:
             out = "Error contraseña demasiado corta"
+        else:
+            self.eliminar_credencial(clave_maestra, servicio, usuario)
+            self.añadir_credencial(clave_maestra, nuevoServicio, nuevoUsuario, nuevaContraseña)
 
-
-        self.eliminar_credencial(clave_maestra, servicio, usuario)
-        self.añadir_credencial(clave_maestra, nuevoServicio, nuevoUsuario, nuevaContraseña)
-
-        out = "Credenciales actualizadas correctamente"
+            out = "Credenciales actualizadas correctamente"
         return out
 
         
