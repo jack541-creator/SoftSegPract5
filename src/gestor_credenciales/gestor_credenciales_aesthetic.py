@@ -126,14 +126,6 @@ class GestorCredenciales:
         """Lista todos los usuarios en la base de datos."""
         pass
 
-    
-    def obtener_correo(self, clave_maestra: str, servicio:str, usuario: str) -> str | None:
-        try:
-            correo = self._credenciales[servicio][usuario]["correo"]
-        except KeyError:
-            correo = None
-
-        return correo
     # autenticación doble factor ------------------------------------------------------------------------------------
 
     # 1º obtenemos el correo asociado ============
