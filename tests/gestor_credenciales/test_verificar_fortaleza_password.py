@@ -1,5 +1,5 @@
 import unittest
-from verificar_fortaleza_password import PasswordError
+from verificar_fortaleza_password import ErrorPoliticaPassword
 
 # contraseñas típicas
 PASSWORDS_COMUNES = {
@@ -17,29 +17,29 @@ class TestVerificarFortalezaPassword(unittest.TestCase):
       MEZCLA: mayúsculas (no solo al inicio),minúsculas, números, y sin ser típicas
       SÍMBOLOS: al menos uno y NO solo al final
 
-    lanza PasswordError si la entrada no es str o está vacía.
+    lanza ErrorPoliticaPassword si la entrada no es str o está vacía.
     """
 
     # entradas inválidas
 
     def test_entrada_entera_lanza_excepcion(self):
         """Un entero no es una contraseña válida."""
-        with self.assertRaises(PasswordError):
+        with self.assertRaises(ErrorPoliticaPassword):
             verificar_fortaleza_password(12345)
 
     def test_entrada_none_lanza_excepcion(self):
         """None debe lanzar PasswordError."""
-        with self.assertRaises(PasswordError):
+        with self.assertRaises(ErrorPoliticaPassword):
             verificar_fortaleza_password(None)
 
     def test_entrada_lista_lanza_excepcion(self):
         """Una lista no es una contraseña válida."""
-        with self.assertRaises(PasswordError):
+        with self.assertRaises(ErrorPoliticaPassword):
             verificar_fortaleza_password(["abc", "123"])
 
     def test_password_vacia_lanza_excepcion(self):
         """Cadena vacía debe lanzar PasswordError."""
-        with self.assertRaises(PasswordError):
+        with self.assertRaises(ErrorPoliticaPassword):
             verificar_fortaleza_password("")
 
     # longitud
