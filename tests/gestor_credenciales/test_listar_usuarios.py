@@ -1,7 +1,7 @@
 import unittest
 
 # Importamos la clase que vamos a proba
-from gestor_credenciales.gestor_credenciales import GestorCredenciales, ErrorAutenticacion
+from src.gestor_credenciales.gestor_credenciales import GestorCredenciales, ErrorAutenticacion
 
 
 
@@ -17,7 +17,7 @@ class test_listar_usuarios(unittest.TestCase):
         self.assertIsNotNone(usuarios)
         self.assertEqual(usuarios, [])
 
-    def test_listar_usuarios_anadir_nuevos_usuarios(self):
+    def test_listar_usuarios_añadir_nuevos_usuarios(self):
         self.gestor.añadir_credencial(self.clave, "GitHub", "usuario1", "clave1")
         self.gestor.añadir_credencial(self.clave, "Eduroam", "usuario2", "clave2")
         self.gestor.añadir_credencial(self.clave, "GitHub", "usuario3", "clave3")

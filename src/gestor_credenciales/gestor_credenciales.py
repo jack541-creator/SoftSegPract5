@@ -77,6 +77,46 @@ class GestorCredenciales:
         """Elimina una credencial existente."""
         pass
 
+    @require(lambda clave_maestra: isinstance(clave_maestra, str))
+    @require(lambda servicio: isinstance(servicio, str))
+    @require(lambda usuario: isinstance(usuario, str))
+    @require(lambda nuevoServicio: isinstance(nuevoServicio, str))
+    @require(lambda nuevoUsuario: isinstance(nuevoUsuario, str))
+    @require(lambda nuevaContraseña: isinstance(nuevaContraseña, str))
+    @ensure(lambda result: isinstance(result, str))
+    def cambiar_credenciales(self, clave_maestra: str, servicio: str, usuario: str, nuevoServicio: str, nuevoUsuario: str, nuevaContraseña: str) -> str:
+        out = None
+        
+        if not clave_maestra:
+            out = "Error: clave maestra vacía"
+        elif self._hash_clave(clave_maestra) != self._clave_maestra_hashed:
+            out = "Error: clave maestra incorrecta"
+        elif not servicio:
+            out = "Error: servicio vacio"
+        elif servicio not in self.listar_servicios(clave_maestra):
+            out = "Error: el servicio no existe"
+        elif not usuario:
+            out = "Error: usuario vacio"
+        elif usuario not in self.listar_usuarios(clave_maestra):
+            out = "Error: el usuario no existe"
+        elif not nuevoServicio:
+            out = "Error: nuevo servicio vacio"
+        elif not nuevoUsuario:
+            out = "Error: nuevo usuario vacio"
+        elif not nuevaContraseña:
+            out = "Error: nueva contraseña vacia"
+        elif len(nuevaContraseña) < 7:
+            out = "Error contraseña demasiado corta"
+
+
+        self.eliminar_credencial(clave_maestra, servicio, usuario)
+        self.añadir_credencial(clave_maestra, nuevoServicio, nuevoUsuario, nuevaContraseña)
+
+        out = "Credenciales actualizadas correctamente"
+        return out
+
+        
+
     @ensure(lambda result: isinstance(result, list))
     def listar_servicios(self, clave_maestra: str) -> list:
         """Lista todos los servicios almacenados."""
