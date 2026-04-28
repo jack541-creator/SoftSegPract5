@@ -43,15 +43,34 @@ class GestorCredenciales:
     @require(lambda password: any(c in "!@#$%^&*" for c in password))
     @ensure(lambda servicio, usuario, result: result is None)
     def añadir_credencial(self, clave_maestra: str, servicio: str, usuario: str, password: str) -> None:
-        """Añade una nueva credencial al gestor."""
-        pass
+        if servicio not in self._credenciales:
+            self._credenciales[servicio] = {}
 
-    @require(lambda servicio: servicio)
-    @ensure(lambda servicio, result: result is not None)
+        self._credenciales[servicio][usuario] = password
+
+    @require(lambda clave_maestra: isinstance(clave_maestra, str) and len(clave_maestra.strip()) > 0)
+    @require(lambda servicio: isinstance(servicio, str) and len(servicio.strip()) > 0)
+    @require(lambda usuario: isinstance(usuario, str) and len(usuario.strip()) > 0)
+    @require(lambda servicio: all(c not in ";&|@" for c in servicio))
+    @require(lambda usuario: all(c not in ";&|@" for c in usuario))
+    @ensure(lambda result: isinstance(result, str))
     def obtener_password(self, clave_maestra: str, servicio: str, usuario: str) -> str:
-        """Recupera una contraseña almacenada."""
-        pass
+        if not self._verificar_clave(clave_maestra, self._clave_maestra_hashed):
+            raise ErrorAutenticacion
 
+        if servicio not in self._credenciales:
+            raise ValueError
+
+        if usuario not in self._credenciales[servicio]:
+            raise ValueError
+
+        password = self._credenciales[servicio][usuario]
+
+        if password is None:
+            raise ValueError
+
+        return password
+    
     @require(lambda servicio: servicio)
     @ensure(lambda servicio, result: result is None)
     def eliminar_credencial(self, clave_maestra: str, servicio: str, usuario: str) -> None:
@@ -74,7 +93,7 @@ class GestorCredenciales:
 
     def _verificar_clave(self, clave: str, clave_hashed: str) -> bool:
         """Verifica si una clave coincide con su hash."""
-        return bcrypt.checkpw(clave.encode('utf-8'), clave_hashed.encode('utf-8'))
+        return bcrypt.checkpw(clave.encode('utf-8'), clave_hashed)
 
     def obtener_correo(self, clave_maestra: str, servicio:str, usuario: str) -> str | None:
         try:
@@ -132,5 +151,5 @@ class GestorCredenciales:
         """Si el codigo de autenticación es 'None' salta la excepción 'ErrorCodigoNoEstablecido'"""
         pass
 
-gestor = GestorCredenciales("claveMaestraSegura123!")
-print(gestor._verificar_clave("clave", gestor._hash_clave("clave")))
+#gestor = GestorCredenciales("claveMaestraSegura123!")
+#print(gestor._verificar_clave("clave", gestor._hash_clave("clave")))
