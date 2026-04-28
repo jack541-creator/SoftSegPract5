@@ -119,8 +119,7 @@ class GestorCredenciales:
 
     @ensure(lambda result: isinstance(result, list))
     def listar_servicios(self, clave_maestra: str) -> list:
-        """Lista todos los servicios almacenados."""
-        pass
+        return list(self._credenciales.keys())
 
     @ensure(lambda result: isinstance(result, list))
     def listar_usuarios(self, clave_maestra:str) -> list:
