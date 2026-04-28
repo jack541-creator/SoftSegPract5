@@ -3,6 +3,7 @@ import hashlib
 import bcrypt
 import smtplib
 from icontract import require, ensure
+from .verificar_fortaleza_password import verificar_fortaleza_password
 
 class ErrorPoliticaPassword(Exception):
     pass
@@ -36,17 +37,17 @@ class GestorCredenciales:
 
     @require(lambda servicio, usuario: servicio and usuario)
     @require(lambda servicio: all(c not in ";&|" for c in servicio))
-    @require(lambda password: len(password) >= 12)
-    @require(lambda password: any(c.isupper() for c in password))
-    @require(lambda password: any(c.islower() for c in password))
-    @require(lambda password: any(c.isdigit() for c in password))
-    @require(lambda password: any(c in "!@#$%^&*" for c in password))
+    @require(lambda password: isinstance(password, str) and len(password) > 0)
     @ensure(lambda servicio, usuario, result: result is None)
     def añadir_credencial(self, clave_maestra: str, servicio: str, usuario: str, password: str) -> None:
+
+        if verificar_fortaleza_password(password) == "débil":
+            raise ErrorPoliticaPassword()
+
         if servicio not in self._credenciales:
             self._credenciales[servicio] = {}
 
-        self._credenciales[servicio][usuario] = password
+        self._credenciales[servicio][usuario] = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
 
     @require(lambda clave_maestra: isinstance(clave_maestra, str) and len(clave_maestra.strip()) > 0)
     @require(lambda servicio: isinstance(servicio, str) and len(servicio.strip()) > 0)

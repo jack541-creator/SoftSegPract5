@@ -1,5 +1,5 @@
 import unittest
-from verificar_fortaleza_password import ErrorPoliticaPassword
+from src.gestor_credenciales.verificar_fortaleza_password import verificar_fortaleza_password, ErrorPoliticaPassword
 
 # contraseñas típicas
 PASSWORDS_COMUNES = {
