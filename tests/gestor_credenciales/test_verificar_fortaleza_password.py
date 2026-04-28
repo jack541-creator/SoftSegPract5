@@ -131,7 +131,7 @@ class TestVerificarFortalezaPassword(unittest.TestCase):
     def test_dos_criterios_es_media(self):
         """Cumplir exactamente 2 criterios la hace media."""
         # longitud (>=7) + no común, sin mezcla ni símbolo interior
-        resultado = verificar_fortaleza_password("abcdefg")
+        resultado = verificar_fortaleza_password("clavemediosegura")
         self.assertEqual(resultado, "media")
 
     def test_tres_criterios_es_media(self):
