@@ -6,3 +6,4 @@ cada uno subirá sus funciones implementadas, en un archivo aparte (no en la cla
 - EL QUE IMPLEMENTE ALGO MAL MARTILLASO EN EL ANO
 - UNA FUNCIÓN POR CADA PERSONA (si quieres hacer segmentación de funciones, las metes dentro de las líneas de la tuya)
 - INCLUIR TU NOMBRE EN EL COMMIT CUANDO SUBAS TUS ARCHIVOS (ejemplo: FUNCIÓN AÑADIR CREDENCIALES ROSANA)
+- CADA PERSONA QUE SUBA TEST, UNA CLASE DE TESTS FUNCIONALES Y OTRA DE TESTS DE SEGURIDAD
