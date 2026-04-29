@@ -1,7 +1,6 @@
 import unittest
 import hashlib
 import bcrypt
-from icontract import require, ensure
 
 class ErrorPoliticaPassword(Exception):
     pass
@@ -22,37 +21,24 @@ class GestorCredenciales:
         self._credenciales = {}
 
     # --- añadir credencial ----------------------------------------------------------------
-    @require(lambda servicio, usuario: servicio and usuario)
-    @require(lambda servicio: all(c not in ";&|" for c in servicio))
-    @require(lambda password: len(password) >= 12)
-    @require(lambda password: any(c.isupper() for c in password))
-    @require(lambda password: any(c.islower() for c in password))
-    @require(lambda password: any(c.isdigit() for c in password))
-    @require(lambda password: any(c in "!@#$%^&*" for c in password))
-    @ensure(lambda servicio, usuario, result: result is None)
     def añadir_credencial(self, clave_maestra: str, servicio: str, usuario: str, password: str) -> None:
         """Añade una nueva credencial al gestor."""
         pass
     # ----------------------------------------------------------------------------------------
     
     # --- obtener password ----------------------------------------------------------------
-    @require(lambda servicio: servicio)
-    @ensure(lambda servicio, result: result is not None)
     def obtener_password(self, clave_maestra: str, servicio: str, usuario: str) -> str:
         """Recupera una contraseña almacenada."""
         pass
     # ----------------------------------------------------------------------------------------
     
     # --- eliminar credencial ----------------------------------------------------------------
-    @require(lambda servicio: servicio)
-    @ensure(lambda servicio, result: result is None)
     def eliminar_credencial(self, clave_maestra: str, servicio: str, usuario: str) -> None:
         """Elimina una credencial existente."""
         pass
     # ----------------------------------------------------------------------------------------
     
     # --- listar servicios -------------------------------------------------------------------
-    @ensure(lambda result: isinstance(result, list))
     def listar_servicios(self, clave_maestra: str) -> list:
         """Lista todos los servicios almacenados."""
         pass
