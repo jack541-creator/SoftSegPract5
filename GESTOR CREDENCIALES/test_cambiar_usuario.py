@@ -1,130 +1,171 @@
 import unittest
-import bcrypt
-from icontract.errors import ViolationError
-
-from src.gestor_credenciales.gestor_credenciales import GestorCredenciales, ErrorAutenticacion, ErrorServicioNoEncontrado
+from gestor_credenciales.gestor_credenciales import GestorCredenciales
 
 
 class TestCambiarUsuarioFuncional(unittest.TestCase):
 
     def setUp(self):
-        self.gestor = GestorCredenciales("ClaveMaestra123!")
-        self.password_original = "PasswordSegura123!"
+        self.gestor = GestorCredenciales(clave_maestra="1234")
 
-        self.gestor._credenciales = {
-            "gmail": {
-                "user_antiguo": bcrypt.hashpw(
-                    self.password_original.encode(),
-                    bcrypt.gensalt()
-                )
-            }
-        }
-
-    def test_cambiar_usuario_correcto(self):
-        self.gestor.cambiar_usuario(
-            "ClaveMaestra123!",
-            "gmail",
-            "user_antiguo",
-            "user_nuevo"
+        # Credencial base
+        self.gestor.añadir_credencial(
+            servicio="GitHub",
+            usuario="user1",
+            contraseña="Password123!",
+            clave_maestra="1234"
         )
 
-        self.assertIn("user_nuevo", self.gestor._credenciales["gmail"])
-        self.assertNotIn("user_antiguo", self.gestor._credenciales["gmail"])
+    def test_cambiar_usuario_valido(self):
+        resultado = self.gestor.cambiar_usuario(
+            servicio="GitHub",
+            usuario_antiguo="user1",
+            usuario_nuevo="user2",
+            clave_maestra="1234"
+        )
+        self.assertTrue(resultado)
 
-    def test_password_se_mantiene(self):
-        self.gestor.cambiar_usuario(
-            "ClaveMaestra123!",
-            "gmail",
-            "user_antiguo",
-            "user_nuevo"
+    def test_clave_maestra_incorrecta(self):
+        with self.assertRaises(PermissionError):
+            self.gestor.cambiar_usuario(
+                servicio="GitHub",
+                usuario_antiguo="user1",
+                usuario_nuevo="user2",
+                clave_maestra="wrong"
+            )
+
+
+    def test_usuario_antiguo_no_existe(self):
+        with self.assertRaises(ValueError):
+            self.gestor.cambiar_usuario(
+                servicio="GitHub",
+                usuario_antiguo="no_existe",
+                usuario_nuevo="user2",
+                clave_maestra="1234"
+            )
+
+
+    def test_usuario_nuevo_vacio(self):
+        with self.assertRaises(ValueError):
+            self.gestor.cambiar_usuario(
+                servicio="GitHub",
+                usuario_antiguo="user1",
+                usuario_nuevo="",
+                clave_maestra="1234"
+            )
+
+
+    def test_usuario_nuevo_demasiado_largo(self):
+        usuario_largo = "u" * 256
+
+        with self.assertRaises(ValueError):
+            self.gestor.cambiar_usuario(
+                servicio="GitHub",
+                usuario_antiguo="user1",
+                usuario_nuevo=usuario_largo,
+                clave_maestra="1234"
+            )
+
+
+    def test_usuario_nuevo_longitud_maxima(self):
+        usuario_max = "u" * 255
+
+        resultado = self.gestor.cambiar_usuario(
+            servicio="GitHub",
+            usuario_antiguo="user1",
+            usuario_nuevo=usuario_max,
+            clave_maestra="1234"
         )
 
-        hash_guardado = self.gestor._credenciales["gmail"]["user_nuevo"]
+        self.assertTrue(resultado)
 
-        self.assertTrue(
-            bcrypt.checkpw(self.password_original.encode(), hash_guardado)
+
+    def test_usuario_duplicado(self):
+        self.gestor.añadir_credencial(
+            servicio="GitHub",
+            usuario="user2",
+            contraseña="Password123!",
+            clave_maestra="1234"
         )
+
+        with self.assertRaises(ValueError):
+            self.gestor.cambiar_usuario(
+                servicio="GitHub",
+                usuario_antiguo="user1",
+                usuario_nuevo="user2",
+                clave_maestra="1234"
+            )
 
 
 class TestCambiarUsuarioSeguridad(unittest.TestCase):
 
     def setUp(self):
-        self.gestor = GestorCredenciales("ClaveMaestra123!")
-        self.gestor._credenciales = {
-            "gmail": {
-                "user_antiguo": bcrypt.hashpw(
-                    "PasswordSegura123!".encode(),
-                    bcrypt.gensalt()
-                )
-            }
-        }
+        self.gestor = GestorCredenciales(clave_maestra="1234")
 
-    def test_servicio_vacio(self):
-        with self.assertRaises(ViolationError):
-            self.gestor.cambiar_usuario(
-                "ClaveMaestra123!",
-                "",
-                "user_antiguo",
-                "user_nuevo"
-            )
-
-    def test_usuario_antiguo_vacio(self):
-        with self.assertRaises(ViolationError):
-            self.gestor.cambiar_usuario(
-                "ClaveMaestra123!",
-                "gmail",
-                "",
-                "user_nuevo"
-            )
-
-    def test_usuario_nuevo_vacio(self):
-        with self.assertRaises(ViolationError):
-            self.gestor.cambiar_usuario(
-                "ClaveMaestra123!",
-                "gmail",
-                "user_antiguo",
-                ""
-            )
-
-    def test_clave_maestra_incorrecta(self):
-        with self.assertRaises(Exception):
-            self.gestor.cambiar_usuario(
-                "clave_incorrecta",
-                "gmail",
-                "user_antiguo",
-                "user_nuevo"
-            )
-
-    def test_servicio_no_existente(self):
-        with self.assertRaises(Exception):
-            self.gestor.cambiar_usuario(
-                "ClaveMaestra123!",
-                "facebook",
-                "user_antiguo",
-                "user_nuevo"
-            )
-
-    def test_usuario_no_existente(self):
-        with self.assertRaises(Exception):
-            self.gestor.cambiar_usuario(
-                "ClaveMaestra123!",
-                "gmail",
-                "otro_user",
-                "user_nuevo"
-            )
-
-    def test_usuario_nuevo_ya_existe(self):
-        self.gestor._credenciales["gmail"]["user_nuevo"] = bcrypt.hashpw(
-            "OtraPassword123!".encode(),
-            bcrypt.gensalt()
+        self.gestor.añadir_credencial(
+            servicio="GitHub",
+            usuario="user1",
+            contraseña="Password123!",
+            clave_maestra="1234"
         )
 
-        with self.assertRaises(Exception):
+
+    def test_usuario_solo_espacios(self):
+        with self.assertRaises(ValueError):
             self.gestor.cambiar_usuario(
-                "ClaveMaestra123!",
-                "gmail",
-                "user_antiguo",
-                "user_nuevo"
+                servicio="GitHub",
+                usuario_antiguo="user1",
+                usuario_nuevo="   ",
+                clave_maestra="1234"
+            )
+
+
+    def test_usuario_script_injection(self):
+        with self.assertRaises(ValueError):
+            self.gestor.cambiar_usuario(
+                servicio="GitHub",
+                usuario_antiguo="user1",
+                usuario_nuevo="<script>alert(1)</script>",
+                clave_maestra="1234"
+            )
+
+
+    def test_usuario_caracteres_invalidos(self):
+        with self.assertRaises(ValueError):
+            self.gestor.cambiar_usuario(
+                servicio="GitHub",
+                usuario_antiguo="user1",
+                usuario_nuevo="user<>",
+                clave_maestra="1234"
+            )
+
+
+    def test_usuario_none(self):
+        with self.assertRaises(TypeError):
+            self.gestor.cambiar_usuario(
+                servicio="GitHub",
+                usuario_antiguo="user1",
+                usuario_nuevo=None,
+                clave_maestra="1234"
+            )
+
+
+    def test_usuario_tipo_int(self):
+        with self.assertRaises(TypeError):
+            self.gestor.cambiar_usuario(
+                servicio="GitHub",
+                usuario_antiguo="user1",
+                usuario_nuevo=123,
+                clave_maestra="1234"
+            )
+
+
+    def test_usuario_tipo_lista(self):
+        with self.assertRaises(TypeError):
+            self.gestor.cambiar_usuario(
+                servicio="GitHub",
+                usuario_antiguo="user1",
+                usuario_nuevo=["user2"],
+                clave_maestra="1234"
             )
 
 
