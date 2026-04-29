@@ -4,3 +4,5 @@ cada uno subirá sus funciones implementadas, en un archivo aparte (no en la cla
 - LOS TESTS QUE LANCEN ALGÚN TIPO DE ERROR DEBERÁ SER ViolationError, para que sirvan con iContracts
 - LAS CLASES QUE SE IMPLEMENTEN DEBEN USAR REQUISITOS iContracts TAMBIÉN
 - EL QUE IMPLEMENTE ALGO MAL MARTILLASO EN EL ANO
+- UNA FUNCIÓN POR CADA PERSONA (si quieres hacer segmentación de funciones, las metes dentro de las líneas de la tuya)
+- INCLUIR TU NOMBRE EN EL COMMIT CUANDO SUBAS TUS ARCHIVOS (ejemplo: FUNCIÓN AÑADIR CREDENCIALES ROSANA)
