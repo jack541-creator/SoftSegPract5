@@ -1,7 +1,6 @@
 import unittest
 import hashlib
 import bcrypt
-import smtplib
 from icontract import require, ensure
 from .verificar_fortaleza_password import verificar_fortaleza_password
 
@@ -17,17 +16,6 @@ class ErrorServicioNoEncontrado(Exception):
 class ErrorCredencialExistente(Exception):
     pass
 
-class ErrorCorreoNoEstablecido(Exception):
-    pass
-
-class ErrorCodigoNoEstablecido(Exception):
-    pass
-
-class ErrorSinIntentosRestantes(Exception):
-    pass
-
-class ErrorUsuarioYaVerificado(Exception):
-    pass
 
 class GestorCredenciales:
     def __init__(self, clave_maestra: str):
@@ -134,60 +122,18 @@ class GestorCredenciales:
         """Verifica si una clave coincide con su hash."""
         return bcrypt.checkpw(clave.encode('utf-8'), clave_hashed)
 
-    def obtener_correo(self, clave_maestra: str, servicio:str, usuario: str) -> str | None:
-        try:
-            correo = self._credenciales[servicio][usuario]["correo"]
-        except KeyError:
-            correo = None
-
-        return correo
-
-    def obtener_codigo2fa(self, clave_maestra: str, servicio:str, usuario: str) -> str | None:
-        try:
-            codigo_auth = self._credenciales[servicio][usuario]["codigo_auth"]
-        except KeyError:
-            codigo_auth = None
-
-        return codigo_auth
-
-    def obtener_intentos_restantes(self, clave_maestra: str, servicio:str, usuario: str) -> int | None:
-        try:
-            intentos = self._credenciales[servicio][usuario]["intentos_restantes"]
-        except KeyError:
-            intentos = None
-
-        return intentos
-
-    def comprobacion_verificacion_usuario(self, clave_maestra: str, servicio:str, usuario: str) -> bool:
-        try:
-            verificado = self._credenciales[servicio][usuario]["verificado"]
-        except KeyError:
-            verificado = False
-
-        return verificado
-
-    def establecer_correo(self, clave_maestra: str, servicio: str, usuario: str, correo: str) -> None:
-        """Establece el correo verificando que este es correcto"""""
+    def generar_otps(self, n: int) -> list:
+        """Crea una lista de n OTPs"""
+        """Las OTPs tienen que tener una longitud mínima de 6 y estar generadas aleatoriamente"""
         pass
 
-    def crear_codigo2fa(self, clave_maestra: str, servicio: str, usuario: str) -> None:
-        """Crea el codigo de auntenticación aleatoriamente y establece los intentos_restantes en 3"""
-        """El código tiene que tener una longitud mínima de 6"""
+    def almacenar_otps(self, clave_maestra: str, servicio: str, usuario: str, opts: list) -> None:
+        """Almacena la lista de OTPs pasadas por parametro, elimina la OTP antigua en caso de que existiera"""
         pass
 
-    def enviar_correo2fa(self, clave_maestra: str, servicio: str, usuario: str) -> None:
-        """Envia un correo usando tls con el contenido"""
-        """Debe llamar a los errores ErrorCorreoNoEstablecido o ErrorCodigoNoEstablecido si falta el correo o el codigo respectivamente"""
-        pass
-
-    def verificar_usuario(self, clave_maestra: str, servicio: str, usuario: str, codigo: str) -> None:
-        """Intento de verificación con el código pasado por el usuario"""
-        """Al llamar a la función:"""
-        """Si el codigo introducido no coincide con el del usuario se le resta un intento"""
-        """Si el codigo introducido coincide entonces (_credenciales[servicio][usuario]["verificado"] = True) y se cambia el codigo de autenticación y los intentos por 'None'"""
-        """Si el usuario ya está verificado entonces salta la excepcion 'ErrorUsuarioYaVerificado'"""
-        """Si los intentos están a 0 entonces salta la excepcion 'ErrorSinIntentosRestantes'"""
-        """Si el codigo de autenticación es 'None' salta la excepción 'ErrorCodigoNoEstablecido'"""
+    def verificar_otp(self, clave_maestra: str, servicio: str, usuario: str, otp: str) -> bool:
+        """Devuelve true si la OTP pasada está en la lista de OTPs del usuario y elimina la OTP de dicha lista"""
+        """Devuelve false si la OTP pasada no está en la lista"""
         pass
 
 #gestor = GestorCredenciales("claveMaestraSegura123!")
