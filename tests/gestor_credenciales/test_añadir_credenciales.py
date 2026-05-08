@@ -1,120 +1,187 @@
-#Test Añadir Credenciales 
 import unittest
-from gestor_credenciales.gestor_credenciales import GestorCredenciales
-from icontract.errors import ViolationError
-from hypothesis import given, strategies as st
 
-# clase funcionales ---------------------------------------------------------------------------------------
-class TestAnadirCredencialesFuncionales(unittest.TestCase):
+from gestor_credenciales.gestor_credenciales import GestorCredenciales 
+
+class TestAñadirCredenciales(unittest.TestCase):
 
     def setUp(self):
         self.gestor = GestorCredenciales(clave_maestra="1234")
 
-    # Caso correcto =========
+    # Caso correcto
     def test_añadir_credencial_valida(self):
+         # Llamamos al método con datos válidos
         resultado = self.gestor.añadir_credencial(
             servicio="GitHub",
             usuario="user1",
-            password="Password123!",
+            contraseña="Password123!",
             clave_maestra="1234"
         )
-        self.assertIsNone(resultado)
+        # Comprobamos que el método devuelve True 
+        self.assertTrue(resultado)
 
-# parametros vacios -------------------------------------------------------------------------------------------
-		 # Servicio vacío =========
-    def test_servicio_vacio(self):
-        with self.assertRaises(ViolationError):
+    # Clave maestra incorrecta
+    def test_añadir_credencial_clave_maestra_incorrecta(self):
+        with self.assertRaises(PermissionError):
+            self.gestor.añadir_credencial(
+                servicio="GitHub",
+                usuario="user1",
+                contraseña="Password123!",
+                clave_maestra="wrong" # Clave incorrecta
+            )
+
+    # Servicio vacío
+    def test_añadir_credencial_servicio_vacio(self):
+        with self.assertRaises(ValueError):
             self.gestor.añadir_credencial(
                 servicio="",
                 usuario="user1",
-                password="Password123!",
+                contraseña="Password123!",
                 clave_maestra="1234"
             )
 
-	    # Usuario vacío ==========
-	    def test_usuario_vacio(self):
-        with self.assertRaises(ViolationError):
+    # Usuario vacío
+    def test_añadir_credencial_usuario_vacio(self):
+        with self.assertRaises(ValueError):
             self.gestor.añadir_credencial(
                 servicio="GitHub",
                 usuario="",
-                password="Password123!",
+                contraseña="Password123!",
                 clave_maestra="1234"
             )
-# passwords -----------------------------------------------------------------------------------------------------
-   # Password corta ==============
-    def test_password_corta(self):
-        with self.assertRaises(ViolationError):
+
+        #Usuario demasiado largo (límite superior)
+    def test_añadir_credencial_usuario_demasiado_largo(self):
+        usuario_largo = "u" * 256  # Supongamos límite máximo = 255
+
+        with self.assertRaises(ValueError):
             self.gestor.añadir_credencial(
                 servicio="GitHub",
-                usuario="user1",
-                password="Short1!",
+                usuario=usuario_largo,
+                contraseña="Password123!",
                 clave_maestra="1234"
             )
 
-    #Password sin mayúsculas ==============
-    def test_password_sin_mayusculas(self):
-        with self.assertRaises(ViolationError):
+    #Usuario en el límite máximo permitido
+    def test_añadir_credencial_usuario_longitud_maxima(self):
+        usuario_max = "u" * 255  # Límite exacto permitido
+
+        resultado = self.gestor.añadir_credencial(
+            servicio="GitHub",
+            usuario=usuario_max,
+            contraseña="Password123!",
+            clave_maestra="1234"
+        )
+
+        self.assertTrue(resultado)
+    
+    #Usuario de longitud mínima (1 carácter)
+    def test_usuario_longitud_minima(self):
+        resultado = self.gestor.añadir_credencial(
+            servicio="GitHub",
+            usuario="u",
+            contraseña="Password123!",
+            clave_maestra="1234"
+        )
+        self.assertTrue(resultado)
+
+    #Usuario con solo espacios
+    def test_añadir_credencial_usuario_solo_espacios(self):
+        with self.assertRaises(ValueError):
             self.gestor.añadir_credencial(
                 servicio="GitHub",
-                usuario="user1",
-                password="password123!",
+                usuario="   ",  # inválido
+                contraseña="Password123!",
                 clave_maestra="1234"
             )
 
-    #Password sin números  =============
-    def test_password_sin_numeros(self):
-        with self.assertRaises(ViolationError):
+    #Usuario con caracteres no permitidos
+    def test_añadir_credencial_usuario_caracteres_invalidos(self):
+        with self.assertRaises(ValueError):
             self.gestor.añadir_credencial(
                 servicio="GitHub",
-                usuario="user1",
-                password="Password!!!",
+                usuario="user<>",  # posible inyección 
+                contraseña="Password123!",
                 clave_maestra="1234"
             )
 
-    # Hypothesis - casos válidos ===========
-    @given(
-	    servicio=st.text(min_size=1).filter(lambda s: all(c not in ";&|" for c in s)),
-	    usuario=st.text(min_size=1).filter(lambda u: u.strip() != ""),
-	    password=st.from_regex(
-	        r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).{12,}$"
-    )
-	)
-	def test_valores_validos_hypothesis(self, servicio, usuario, password):
-	    resultado = self.gestor.añadir_credencial(
-	        servicio=servicio,
-	        usuario=usuario,
-	        password=password,
-	        clave_maestra="1234"
-	    )
-	    self.assertIsNone(resultado)
-        
-        
-#clase de segururidad -------------------------------------------------------------------------------------------------------------------------------
-class TestAnadirCredencialesSeguridad(unittest.TestCase):
+    # Usuario con caracteres válidos comunes
+    def test_añadir_credencial_usuario_valido_con_guiones(self):
+        resultado = self.gestor.añadir_credencial(
+            servicio="GitHub",
+            usuario="user_name-123",  # formato típico válido
+            contraseña="Password123!",
+            clave_maestra="1234"
+        )
 
-    def setUp(self):
-        self.gestor = GestorCredenciales(clave_maestra="1234")
+        self.assertTrue(resultado)
 
-    # Inyección en servicio ============
-    def test_inyeccion_servicio(self):
-        with self.assertRaises(ViolationError):
+    # Usuario tipo None (error de tipo)
+    def test_añadir_credencial_usuario_none(self):
+        with self.assertRaises(TypeError):
             self.gestor.añadir_credencial(
-                servicio="GitHub; DROP TABLE",
-                usuario="user1",
-                password="Password123!",
+                servicio="GitHub",
+                usuario=None,  # tipo inválido
+                contraseña="Password123!",
                 clave_maestra="1234"
             )
 
-    # Caracteres peligrosos (Hypothesis) ===========
-    @given(st.text().filter(lambda s: any(c in ";&|" for c in s)))
-    def test_servicio_invalido_hypothesis(self, servicio):
-        with self.assertRaises(ViolationError):
+    # Usuario como número
+    def test_usuario_tipo_invalido_int(self):
+        with self.assertRaises(TypeError):
             self.gestor.añadir_credencial(
-                servicio=servicio,
-                usuario="user",
-                password="Password123!",
+                servicio="GitHub",
+                usuario=12345,
+                contraseña="Password123!",
+                clave_maestra="1234"
+            )
+
+    #Usuario como lista
+    def test_usuario_tipo_invalido_lista(self):
+        with self.assertRaises(TypeError):
+            self.gestor.añadir_credencial(
+                servicio="GitHub",
+                usuario=["user"],
+                contraseña="Password123!",
                 clave_maestra="1234"
             )
             
+    #Inyección en nombre de servicio (seguridad)
+    def test_añadir_credencial_inyeccion_servicio(self):
+        with self.assertRaises(ValueError):
+            self.gestor.añadir_credencial(
+                servicio="GitHub; DROP TABLE",
+                usuario="user1",
+                contraseña="Password123!",
+                clave_maestra="1234"
+            )
+    # XSS / scripts
+    def test_usuario_script_injection(self):
+        with self.assertRaises(ValueError):
+            self.gestor.añadir_credencial(
+                servicio="GitHub",
+                usuario="<script>alert(1)</script>",
+                contraseña="Password123!",
+                clave_maestra="1234"
+            )
+
+    # No duplicados
+    def test_añadir_credencial_duplicada(self):
+         # Primero añadimos una credencial válida
+        self.gestor.añadir_credencial(
+            servicio="GitHub",
+            usuario="user1",
+            contraseña="Password123!",
+            clave_maestra="1234"
+        )
+        # Intentamos añadir la misma otra vez
+        # Debe fallar porque ya existe
+        with self.assertRaises(ValueError):
+            self.gestor.añadir_credencial(
+                servicio="GitHub",
+                usuario="user1",
+                contraseña="Password123!",
+                clave_maestra="1234"
+            )
+
 if __name__ == "__main__":
     unittest.main()
