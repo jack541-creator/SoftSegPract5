@@ -3,7 +3,7 @@ def generar_otps(self, cantidad: int) -> list:
         if not isinstance(cantidad, int):
             raise TypeError
 
-        if cantidad <= 0:
+        if cantidad <= 0: 
             raise ValueError
 
     
