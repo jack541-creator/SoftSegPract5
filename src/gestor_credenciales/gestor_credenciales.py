@@ -66,42 +66,37 @@ class GestorCredenciales:
         """Elimina una credencial existente."""
         pass
 
-    @require(lambda clave_maestra: isinstance(clave_maestra, str))
-    @require(lambda servicio: isinstance(servicio, str))
-    @require(lambda usuario: isinstance(usuario, str))
-    @require(lambda nuevoServicio: isinstance(nuevoServicio, str))
-    @require(lambda nuevoUsuario: isinstance(nuevoUsuario, str))
-    @require(lambda nuevaContraseña: isinstance(nuevaContraseña, str))
-    @ensure(lambda result: isinstance(result, str))
-    def cambiar_credenciales(self, clave_maestra: str, servicio: str, usuario: str, nuevoServicio: str, nuevoUsuario: str, nuevaContraseña: str) -> str:
-        out = "Error"
+    def cambiar_usuario(servicio, usuario_antiguo, usuario_nuevo, clave_maestra):	
+        if not servicio or not isinstance(servicio, str) or not usuario_antiguo or not isinstance(usuario_antiguo, str) or not usuario_nuevo or not isinstance(usuario_nuevo, str) or not clave_maestra or not isinstance(clave_maestra, str):
+            raise TypeError
         
-        if not clave_maestra:
-            out = "Error: clave maestra vacía"
-        elif not self._verificar_clave(clave_maestra, self._clave_maestra_hashed):
-            out = "Error: clave maestra incorrecta"
-        elif not servicio:
-            out = "Error: servicio vacio"
-        elif servicio not in self.listar_servicios(clave_maestra):
-            out = "Error: el servicio no existe"
-        elif not usuario:
-            out = "Error: usuario vacio"
-        elif usuario not in self.listar_usuarios(clave_maestra):
-            out = "Error: el usuario no existe"
-        elif not nuevoServicio:
-            out = "Error: nuevo servicio vacio"
-        elif not nuevoUsuario:
-            out = "Error: nuevo usuario vacio"
-        elif not nuevaContraseña:
-            out = "Error: nueva contraseña vacia"
-        elif len(nuevaContraseña) < 7:
-            out = "Error contraseña demasiado corta"
-        else:
-            self.eliminar_credencial(clave_maestra, servicio, usuario)
-            self.añadir_credencial(clave_maestra, nuevoServicio, nuevoUsuario, nuevaContraseña)
+        if not verificar_clave(clave_maestra, self._clave_maestra_hashed):
+            raise PermissionError
 
-            out = "Credenciales actualizadas correctamente"
-        return out
+        if len(servicio) < 1 or len(usuario_antiguo) < 1 or len(usuario_nuevo) < 1:
+            raise ValueError
+        
+        if servicio not in self._credenciales or usuario_antiguo not in self._credenciales[servicio]:
+            raise ValueError
+        
+        if len(usuario_nuevo) > 255:
+            raise ValueError
+        
+        if usuario_nuevo in self._credenciales[servicio]:
+            raise ValueError
+        
+        if usuario_nuevo.strip() == "":
+            raise ValueError
+        
+        substrings = ['<', '>']
+        if any(sub in usuario_nuevo for sub in substrings):
+            raise ValueError
+        
+
+        contraseña_hashed = self._credenciales[servicio].pop(usuario_antiguo)
+        self._credenciales[servicio][usuario_nuevo] = contraseña_hashed
+
+        return True
 
         
 
