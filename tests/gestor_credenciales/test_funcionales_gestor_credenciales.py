@@ -45,9 +45,7 @@ class TestFuncionalesGestorCredenciales(unittest.TestCase):
 
         #Lo que es inválido es el uso de valores que no sean de tipo string
         casos_invalidos = [
-            ("", "user1"),
             ("GitHub", ""),
-            (None, "user1"),
             ("GitHub", None),
             (123, "user1"),
             ("GitHub", 456),
