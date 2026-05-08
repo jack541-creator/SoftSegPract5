@@ -1,6 +1,4 @@
 import unittest
-
-# Importamos la clase que vamos a proba
 from src.gestor_credenciales.gestor_credenciales import GestorCredenciales, ErrorAutenticacion
 
 

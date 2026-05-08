@@ -1,6 +1,5 @@
 import pytest
 from hypothesis import given, strategies as st
-
 from src.gestor_credenciales.gestor_credenciales import obtener_password
 
 USUARIO_VALIDO = "usuario_valido"

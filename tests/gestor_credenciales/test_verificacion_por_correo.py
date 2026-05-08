@@ -1,7 +1,7 @@
 import unittest
 import icontract
 from unittest.mock import patch
-from gestor_credenciales.gestor_credenciales import GestorCredenciales, ErrorCodigoNoEstablecido, ErrorSinIntentosRestantes, ErrorUsuarioYaVerificado , ErrorCorreoNoEstablecido
+from src.gestor_credenciales.gestor_credenciales import GestorCredenciales, ErrorCodigoNoEstablecido, ErrorSinIntentosRestantes, ErrorUsuarioYaVerificado , ErrorCorreoNoEstablecido
 
 
 class Test2FA(unittest.TestCase):

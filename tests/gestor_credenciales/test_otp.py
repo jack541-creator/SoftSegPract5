@@ -1,7 +1,6 @@
 
 import unittest
-from gestor_credenciales.gestor_credenciales import GestorCredenciales
-
+from src.gestor_credenciales.gestor_credenciales import GestorCredenciales
 
 class Test_OTP(unittest.TestCase):
 

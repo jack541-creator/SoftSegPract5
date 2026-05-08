@@ -1,6 +1,7 @@
 import unittest
 import hashlib
 import bcrypt
+from icontract import require, ensure
 
 class ErrorPoliticaPassword(Exception):
     pass
