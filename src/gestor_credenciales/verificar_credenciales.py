@@ -1,69 +1,55 @@
-import random
-import string
+def generar_otps(self, cantidad: int) -> list:
 
-
-class GestorCredenciales:
-
-    def generar_otps(self, cantidad: int) -> list:
-        """
-        Genera una lista de OTPs aleatorias.
-        """
-
-        # Validación básica
         if not isinstance(cantidad, int):
-            raise TypeError("La cantidad debe ser un entero")
+            raise TypeError
 
         if cantidad <= 0:
-            raise ValueError("La cantidad debe ser mayor que 0")
+            raise ValueError
 
-        # Lista de OTPs
-        otps = []
-
-        # Caracteres permitidos
+    
         caracteres = string.ascii_letters + string.digits
 
-        # Generación de OTPs
-        for _ in range(cantidad):
+    # SET = no permite duplicados
+        otps = set()
 
-            # OTP de 6 caracteres
+        while len(otps) < cantidad:
+
             otp = ''.join(random.choice(caracteres) for _ in range(6))
 
-            otps.append(otp)
+            otps.add(otp)
 
-        return otps
-
+        return list(otps)
 
     def almacenar_otps(self, clave_maestra: str, servicio: str, usuario: str, otps: list) -> None:
         """
         Almacena las OTPs del usuario.
-        Reemplaza las OTPs anteriores.
+        Reemplaza las anteriores si existían.
         """
 
-        self._credenciales[servicio][usuario]["otps"] = otps
+    # Validación básica
+        if not isinstance(otps, list):
+            raise TypeError
+
+    # Guardar OTPs
+        # Guardar COPIA independiente
+        self._credenciales[servicio][usuario]["otps"] = otps.copy()
 
 
-    def verificar_otp(self, clave_maestra: str, servicio: str, usuario: str, otp: str) -> bool:
-        """
-        Verifica si una OTP es válida.
-        Si es correcta, se elimina para impedir reutilización.
-        """
+    def verificar_otp(self, clave_maestra, servicio, usuario, otp):
 
-        # OTP debe ser string
+        print("ENTRANDO EN verificar_otp")
+
         if not isinstance(otp, str):
             return False
 
-        # Debe tener exactamente 6 caracteres
         if len(otp) != 6:
             return False
 
-        # Obtener OTPs almacenadas
-        otps = self._credenciales[servicio][usuario].get("otps", [])
+        if otp in self._credenciales[servicio][usuario]["otps"]:
 
-        # Verificación
-        if otp in otps:
+            print("ELIMINANDO OTP")
 
-            # Eliminar OTP usada
-            otps.remove(otp)
+            self._credenciales[servicio][usuario]["otps"].remove(otp)
 
             return True
 
