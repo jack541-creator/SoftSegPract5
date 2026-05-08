@@ -35,8 +35,42 @@ class GestorCredenciales:
     
     # --- eliminar credencial ----------------------------------------------------------------
     def eliminar_credencial(self, clave_maestra: str, servicio: str, usuario: str) -> None:
-        """Elimina una credencial existente."""
-        pass
+    """Elimina una credencial existente."""
+
+    # Validación de tipos
+    if (
+        not isinstance(clave_maestra, str) or
+        not isinstance(servicio, str) or
+        not isinstance(usuario, str)
+    ):
+        raise TypeError
+
+    # Validación de valores vacíos
+    if (
+        clave_maestra.strip() == "" or
+        servicio.strip() == "" or
+        usuario.strip() == ""
+    ):
+        raise ValueError
+
+    # Verificar clave maestra
+    if not self._verificar_clave(clave_maestra, self._clave_maestra_hashed):
+        raise ErrorAutenticacion
+
+    # Verificar que exista el servicio
+    if servicio not in self._credenciales:
+        raise ErrorServicioNoEncontrado
+
+    # Verificar que exista el usuario
+    if usuario not in self._credenciales[servicio]:
+        raise ErrorServicioNoEncontrado
+
+    # Eliminar credencial
+    del self._credenciales[servicio][usuario]
+
+    # Eliminar servicio vacío
+    if len(self._credenciales[servicio]) == 0:
+        del self._credenciales[servicio]
 
     def cambiar_usuario(servicio, usuario_antiguo, usuario_nuevo, clave_maestra):	
         if not servicio or not isinstance(servicio, str) or not usuario_antiguo or not isinstance(usuario_antiguo, str) or not usuario_nuevo or not isinstance(usuario_nuevo, str) or not clave_maestra or not isinstance(clave_maestra, str):
