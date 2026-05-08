@@ -113,8 +113,8 @@ class TestVerificarFortalezaPassword(unittest.TestCase):
     def test_password_en_lista_negra_es_debil(self):
         """La contraseña está en la lista de contraseñas comprometidas, es débil."""
         for p in PASSWORDS_COMUNES:
-            resultado = verificar_fortaleza_password(p)
-        self.assertEqual(resultado, "débil")
+            with self.subTest(password=p):
+                self.assertEqual(verificar_fortaleza_password(p), "débil")
 
     def test_contraseña_no_comun_no_penaliza(self):
         """Una contraseña que no está en la lista negra es aceptable"""
