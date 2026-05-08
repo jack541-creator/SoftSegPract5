@@ -1,8 +1,6 @@
 import unittest
 import hashlib
 import bcrypt
-from icontract import require, ensure
-from .verificar_fortaleza_password import verificar_fortaleza_password
 
 class ErrorPoliticaPassword(Exception):
     pass
@@ -16,52 +14,25 @@ class ErrorServicioNoEncontrado(Exception):
 class ErrorCredencialExistente(Exception):
     pass
 
-
 class GestorCredenciales:
     def __init__(self, clave_maestra: str):
         """Inicializa el gestor con una clave maestra."""
         self._clave_maestra_hashed = self._hash_clave(clave_maestra)
         self._credenciales = {}
 
-    @require(lambda servicio, usuario: servicio and usuario)
-    @require(lambda servicio: all(c not in ";&|" for c in servicio))
-    @require(lambda password: isinstance(password, str) and len(password) > 0)
-    @ensure(lambda servicio, usuario, result: result is None)
+    # --- añadir credencial ----------------------------------------------------------------
     def añadir_credencial(self, clave_maestra: str, servicio: str, usuario: str, password: str) -> None:
-
-        if verificar_fortaleza_password(password) == "débil":
-            raise ErrorPoliticaPassword()
-
-        if servicio not in self._credenciales:
-            self._credenciales[servicio] = {}
-
-        self._credenciales[servicio][usuario] = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
-
-    @require(lambda clave_maestra: isinstance(clave_maestra, str) and len(clave_maestra.strip()) > 0)
-    @require(lambda servicio: isinstance(servicio, str) and len(servicio.strip()) > 0)
-    @require(lambda usuario: isinstance(usuario, str) and len(usuario.strip()) > 0)
-    @require(lambda servicio: all(c not in ";&|@" for c in servicio))
-    @require(lambda usuario: all(c not in ";&|@" for c in usuario))
-    @ensure(lambda result: isinstance(result, str))
-    def obtener_password(self, clave_maestra: str, servicio: str, usuario: str) -> str:
-        if not self._verificar_clave(clave_maestra, self._clave_maestra_hashed):
-            raise ErrorAutenticacion
-
-        if servicio not in self._credenciales:
-            raise ValueError
-
-        if usuario not in self._credenciales[servicio]:
-            raise ValueError
-
-        password = self._credenciales[servicio][usuario]
-
-        if password is None:
-            raise ValueError
-
-        return password
+        """Añade una nueva credencial al gestor."""
+        pass
+    # ----------------------------------------------------------------------------------------
     
-    @require(lambda servicio: servicio)
-    @ensure(lambda servicio, result: result is None)
+    # --- obtener password ----------------------------------------------------------------
+    def obtener_password(self, clave_maestra: str, servicio: str, usuario: str) -> str:
+        """Recupera una contraseña almacenada."""
+        pass
+    # ----------------------------------------------------------------------------------------
+    
+    # --- eliminar credencial ----------------------------------------------------------------
     def eliminar_credencial(self, clave_maestra: str, servicio: str, usuario: str) -> None:
         """Elimina una credencial existente."""
         pass
@@ -102,34 +73,41 @@ class GestorCredenciales:
 
     @ensure(lambda result: isinstance(result, list))
     def listar_servicios(self, clave_maestra: str) -> list:
-        return list(self._credenciales.keys())
-
-    @ensure(lambda result: isinstance(result, list))
-    def listar_usuarios(self, clave_maestra:str) -> list:
-        """Lista todos los usuarios en la base de datos."""
+        """Lista todos los servicios almacenados."""
         pass
-
+    # ----------------------------------------------------------------------------------------
+    
+    # --- hash clave -------------------------------------------------------------------------
     def _hash_clave(self, clave: str) -> str:
         """Hashea una clave usando bcrypt."""
         return bcrypt.hashpw(clave.encode('utf-8'), bcrypt.gensalt())
-
+    # ----------------------------------------------------------------------------------------
+    
+    # --- verificar clave -------------------------------------------------------------------
     def _verificar_clave(self, clave: str, clave_hashed: str) -> bool:
         """Verifica si una clave coincide con su hash."""
-        return bcrypt.checkpw(clave.encode('utf-8'), clave_hashed)
-
-    def generar_otps(self, n: int) -> list:
-        """Crea una lista de n OTPs"""
-        """Las OTPs tienen que tener una longitud mínima de 6 y estar generadas aleatoriamente"""
+        return bcrypt.checkpw(clave.encode('utf-8'), clave_hashed.encode('utf-8'))
+    # ----------------------------------------------------------------------------------------
+    
+    # --- listar usuarios --------------------------------------------------------------------
+    def listar_usuarios():
         pass
+    # ----------------------------------------------------------------------------------------
 
-    def almacenar_otps(self, clave_maestra: str, servicio: str, usuario: str, opts: list) -> None:
-        """Almacena la lista de OTPs pasadas por parametro, elimina la OTP antigua en caso de que existiera"""
+    # --- cambiar usuario --------------------------------------------------------------------
+    def cambiar_usuario():
         pass
+    # ----------------------------------------------------------------------------------------
 
-    def verificar_otp(self, clave_maestra: str, servicio: str, usuario: str, otp: str) -> bool:
-        """Devuelve true si la OTP pasada está en la lista de OTPs del usuario y elimina la OTP de dicha lista"""
-        """Devuelve false si la OTP pasada no está en la lista"""
+    # --- verificar fortaleza password -------------------------------------------------------
+    def verificar_fortaleza_password():
         pass
+    # ----------------------------------------------------------------------------------------
+
+    # --- doble factor --------------------------------------------------------------------
+    def doble_factor():
+        pass
+    # ----------------------------------------------------------------------------------------
 
 #gestor = GestorCredenciales("claveMaestraSegura123!")
 #print(gestor._verificar_clave("clave", gestor._hash_clave("clave")))
