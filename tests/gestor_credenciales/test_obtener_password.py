@@ -1,53 +1,88 @@
 import pytest
-from hypothesis import given, strategies as st
-from src.gestor_credenciales.gestor_credenciales import obtener_password
+from icontract import ViolationError
 
-USUARIO_VALIDO = "usuario_valido"
+from src.gestor_credenciales.gestor_credenciales import GestorCredenciales
 
-
-# -----------------------
-# TESTS FUNCIONALES
-# -----------------------
 
 class TestObtenerPasswordFuncional:
 
+    def setup_method(self):
+
+        self.clave = "ClaveSegura123!"
+
+        self.gestor = GestorCredenciales(self.clave)
+
+        # Credencial válida para los tests
+        self.gestor.añadir_credencial(
+            self.clave,
+            "Github",
+            "usuario1",
+            "Password123!"
+        )
+
     def test_obtener_password_valido(self):
-        password = obtener_password(USUARIO_VALIDO)
+
+        password = self.gestor.obtener_password(
+            self.clave,
+            "Github",
+            "usuario1"
+        )
 
         assert isinstance(password, str)
-        assert password is not None
-        assert len(password) >= 7
+        assert password == "Password123!"
 
-    def test_usuario_inexistente(self):
-        with pytest.raises(ValueError):
-            obtener_password("usuario_inexistente")
-
-
-# -----------------------
-# TESTS DE SEGURIDAD
-# -----------------------
 
 class TestObtenerPasswordSeguridad:
 
+    def setup_method(self):
+
+        self.clave = "ClaveSegura123!"
+
+        self.gestor = GestorCredenciales(self.clave)
+
+        self.gestor.añadir_credencial(
+            self.clave,
+            "Github",
+            "usuario1",
+            "Password123!"
+        )
+
+    def test_usuario_inexistente(self):
+
+        with pytest.raises(ViolationError):
+
+            self.gestor.obtener_password(
+                self.clave,
+                "Github",
+                "usuario_fake"
+            )
+
+    def test_servicio_inexistente(self):
+
+        with pytest.raises(ViolationError):
+
+            self.gestor.obtener_password(
+                self.clave,
+                "Steam",
+                "usuario1"
+            )
+
     def test_usuario_vacio(self):
-        with pytest.raises(ValueError):
-            obtener_password("")
+
+        with pytest.raises(ViolationError):
+
+            self.gestor.obtener_password(
+                self.clave,
+                "Github",
+                ""
+            )
 
     def test_tipo_incorrecto(self):
-        with pytest.raises(TypeError):
-            obtener_password(123)
 
-    def test_input_invalido(self):
-        with pytest.raises(ValueError):
-            obtener_password("usuario@@@")
+        with pytest.raises(ViolationError):
 
-    @given(st.text())
-    def test_inputs_aleatorios(self, usuario):
-        """
-        Test de robustez con Hypothesis
-        """
-        if usuario == USUARIO_VALIDO:
-            return
-
-        with pytest.raises((ValueError, TypeError)):
-            obtener_password(usuario)
+            self.gestor.obtener_password(
+                self.clave,
+                "Github",
+                123
+            )
