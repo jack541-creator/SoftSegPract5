@@ -22,9 +22,40 @@ class GestorCredenciales:
         self._credenciales = {}
 
     # --- añadir credencial ----------------------------------------------------------------
-    def añadir_credencial(self, clave_maestra: str, servicio: str, usuario: str, password: str) -> None:
-        """Añade una nueva credencial al gestor."""
-        pass
+    def anadir_credencial(self, clave_maestra: str, servicio: str, usuario: str, password: str) -> bool:
+        simbolos = "!>;'\\/[]{}:\n\r"
+        palabras_peligrosas = ["DROP", "DELETE", "UPDATE", "ALTER", "CREATE", "TABLE", "ALERT", "SCRIPT", "EXECUTE", "IMMEDIATE"]
+
+        for valor in [clave_maestra, servicio, usuario, password]:
+            if not isinstance(valor, str):
+                raise TypeError("Todos los parámetros deben ser str")
+
+        clave_maestra = clave_maestra.strip()
+        servicio = servicio.strip()
+        usuario = usuario.strip()
+        password = password.strip()
+
+        if not self._verificar_clave(clave_maestra, self._clave_maestra_hashed):
+            raise PermissionError
+
+        if not servicio or not usuario or len(usuario) > 255:
+            raise ValueError
+
+        if any(c in simbolos for c in usuario) or any(c in simbolos for c in servicio):
+            raise ValueError
+
+        if any(p.upper() in palabras_peligrosas for p in servicio.split()):
+            raise ValueError
+
+        # voy a asumir que verificar_fortaleza_password() es llamado antes de esta función
+        if servicio not in self._credenciales:
+            self._credenciales[servicio] = {}
+
+        if usuario in self._credenciales[servicio]:
+            raise ValueError("Credencial ya existente")
+
+        self._credenciales[servicio][usuario] = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
+        return True
     # ----------------------------------------------------------------------------------------
     
     # --- obtener password ----------------------------------------------------------------
