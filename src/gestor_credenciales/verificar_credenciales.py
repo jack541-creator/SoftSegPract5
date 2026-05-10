@@ -1,3 +1,5 @@
+import random
+import string
 def generar_otps(self, cantidad: int) -> list:
 
         if not isinstance(cantidad, int):
