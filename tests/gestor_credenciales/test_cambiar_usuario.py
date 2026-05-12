@@ -7,10 +7,10 @@ class TestCambiarUsuarioFuncional(unittest.TestCase):
         self.gestor = GestorCredenciales(clave_maestra="1234")
 
         # Credencial base
-        self.gestor.añadir_credencial(
+        self.gestor.anadir_credencial(
             servicio="GitHub",
             usuario="user1",
-            contraseña="Password123!",
+            password="Password123!",
             clave_maestra="1234"
         )
 
@@ -79,10 +79,10 @@ class TestCambiarUsuarioFuncional(unittest.TestCase):
 
 
     def test_usuario_duplicado(self):
-        self.gestor.añadir_credencial(
+        self.gestor.anadir_credencial(
             servicio="GitHub",
             usuario="user2",
-            contraseña="Password123!",
+            password="Password123!",
             clave_maestra="1234"
         )
 
@@ -100,10 +100,10 @@ class TestCambiarUsuarioSeguridad(unittest.TestCase):
     def setUp(self):
         self.gestor = GestorCredenciales(clave_maestra="1234")
 
-        self.gestor.añadir_credencial(
+        self.gestor.anadir_credencial(
             servicio="GitHub",
             usuario="user1",
-            contraseña="Password123!",
+            password="Password123!",
             clave_maestra="1234"
         )
 

@@ -66,48 +66,48 @@ class GestorCredenciales:
     
     # --- eliminar credencial ----------------------------------------------------------------
     def eliminar_credencial(self, clave_maestra: str, servicio: str, usuario: str) -> None:
-    """Elimina una credencial existente."""
+        """Elimina una credencial existente."""
 
-    # Validación de tipos
-    if (
-        not isinstance(clave_maestra, str) or
-        not isinstance(servicio, str) or
-        not isinstance(usuario, str)
-    ):
-        raise TypeError
+        # Validación de tipos
+        if (
+            not isinstance(clave_maestra, str) or
+            not isinstance(servicio, str) or
+            not isinstance(usuario, str)
+        ):
+            raise TypeError
 
-    # Validación de valores vacíos
-    if (
-        clave_maestra.strip() == "" or
-        servicio.strip() == "" or
-        usuario.strip() == ""
-    ):
-        raise ValueError
+        # Validación de valores vacíos
+        if (
+            clave_maestra.strip() == "" or
+            servicio.strip() == "" or
+            usuario.strip() == ""
+        ):
+            raise ValueError
 
-    # Verificar clave maestra
-    if not self._verificar_clave(clave_maestra, self._clave_maestra_hashed):
-        raise ErrorAutenticacion
+        # Verificar clave maestra
+        if not self._verificar_clave(clave_maestra, self._clave_maestra_hashed):
+            raise ErrorAutenticacion
 
-    # Verificar que exista el servicio
-    if servicio not in self._credenciales:
-        raise ErrorServicioNoEncontrado
+        # Verificar que exista el servicio
+        if servicio not in self._credenciales:
+            raise ErrorServicioNoEncontrado
 
-    # Verificar que exista el usuario
-    if usuario not in self._credenciales[servicio]:
-        raise ErrorServicioNoEncontrado
+        # Verificar que exista el usuario
+        if usuario not in self._credenciales[servicio]:
+            raise ErrorServicioNoEncontrado
 
-    # Eliminar credencial
-    del self._credenciales[servicio][usuario]
+        # Eliminar credencial
+        del self._credenciales[servicio][usuario]
 
-    # Eliminar servicio vacío
-    if len(self._credenciales[servicio]) == 0:
-        del self._credenciales[servicio]
+        # Eliminar servicio vacío
+        if len(self._credenciales[servicio]) == 0:
+            del self._credenciales[servicio]
 
-    def cambiar_usuario(servicio, usuario_antiguo, usuario_nuevo, clave_maestra):	
-        if not servicio or not isinstance(servicio, str) or not usuario_antiguo or not isinstance(usuario_antiguo, str) or not usuario_nuevo or not isinstance(usuario_nuevo, str) or not clave_maestra or not isinstance(clave_maestra, str):
+    def cambiar_usuario(self, servicio, usuario_antiguo, usuario_nuevo, clave_maestra):	
+        if not isinstance(servicio, str) or not isinstance(usuario_antiguo, str) or not isinstance(usuario_nuevo, str) or not isinstance(clave_maestra, str):
             raise TypeError
         
-        if not verificar_clave(clave_maestra, self._clave_maestra_hashed):
+        if not self._verificar_clave(clave_maestra, self._clave_maestra_hashed):
             raise PermissionError
 
         if len(servicio) < 1 or len(usuario_antiguo) < 1 or len(usuario_nuevo) < 1:
@@ -150,16 +150,13 @@ class GestorCredenciales:
     # --- verificar clave -------------------------------------------------------------------
     def _verificar_clave(self, clave: str, clave_hashed: str) -> bool:
         """Verifica si una clave coincide con su hash."""
-        return bcrypt.checkpw(clave.encode('utf-8'), clave_hashed.encode('utf-8'))
+        if isinstance(clave_hashed, str):
+            clave_hashed = clave_hashed.encode("utf-8")
+        return bcrypt.checkpw(clave.encode('utf-8'), clave_hashed)
     # ----------------------------------------------------------------------------------------
     
     # --- listar usuarios --------------------------------------------------------------------
     def listar_usuarios():
-        pass
-    # ----------------------------------------------------------------------------------------
-
-    # --- cambiar usuario --------------------------------------------------------------------
-    def cambiar_usuario():
         pass
     # ----------------------------------------------------------------------------------------
 
