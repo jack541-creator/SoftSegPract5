@@ -103,12 +103,10 @@ class GestorCredenciales:
         if len(self._credenciales[servicio]) == 0:
             del self._credenciales[servicio]
 
+    # MEDIACION COMPLETA
     def cambiar_usuario(self, servicio, usuario_antiguo, usuario_nuevo, clave_maestra):	
         if not isinstance(servicio, str) or not isinstance(usuario_antiguo, str) or not isinstance(usuario_nuevo, str) or not isinstance(clave_maestra, str):
             raise TypeError
-        
-        if not self._verificar_clave(clave_maestra, self._clave_maestra_hashed):
-            raise PermissionError
 
         if len(servicio) < 1 or len(usuario_antiguo) < 1 or len(usuario_nuevo) < 1:
             raise ValueError
@@ -128,6 +126,9 @@ class GestorCredenciales:
         substrings = ['<', '>']
         if any(sub in usuario_nuevo for sub in substrings):
             raise ValueError
+        
+        if not self._verificar_clave(clave_maestra, self._clave_maestra_hashed): # Mediación completa -> Verificación de permiso ante acceso a cambiar el usuario
+            raise PermissionError
         
 
         contraseña_hashed = self._credenciales[servicio].pop(usuario_antiguo)
