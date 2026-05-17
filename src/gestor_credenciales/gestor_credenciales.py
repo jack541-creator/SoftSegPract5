@@ -129,24 +129,46 @@ class GestorCredenciales:
     # añadir credencial
     # =====================================================
 
-    def añadir_credencial(self, clave_maestra: str, servicio: str, usuario: str, password: str) -> None:
+    # access_control encima para que se ejecute primero
+    @access_control
+    @registry(nivel_log="warning")
+    def anadir_credencial(self, clave_maestra: str, servicio: str, usuario: str, password: str) -> bool:
+        simbolos = "!>;'\\/[]{}:\n\r"
+        palabras_peligrosas = ["DROP", "DELETE", "UPDATE", "ALTER", "CREATE", "TABLE", "ALERT", "SCRIPT", "EXECUTE", "IMMEDIATE"]
 
-        self._autenticar(clave_maestra)
+        for valor in [clave_maestra, servicio, usuario, password]:
+            if not isinstance(valor, str):
+                raise TypeError("Todos los parámetros deben ser str")
 
-        fuerza = self._validator.verificar_fortaleza(password)
+        clave_maestra = clave_maestra.strip()
+        servicio = servicio.strip()
+        usuario = usuario.strip()
+        password = password.strip()
 
-        if fuerza == "débil":
-            raise ErrorPoliticaPassword()
+        if usuario.replace('.', '', 1).replace('-', '', 1).isdigit():
+            raise ValueError
+        if not self._verificar_clave(clave_maestra, self._clave_maestra_hashed):
+            raise PermissionError
 
+        if not servicio or not usuario or len(usuario) > 255:
+            raise ValueError
+
+        if any(c in simbolos for c in usuario) or any(c in simbolos for c in servicio):
+            raise ValueError
+
+        if any(p.upper() in palabras_peligrosas for p in servicio.split()):
+            raise ValueError
+
+        # voy a asumir que verificar_fortaleza_password() es llamado antes de esta función
         if servicio not in self._credenciales:
             self._credenciales[servicio] = {}
 
         if usuario in self._credenciales[servicio]:
-            raise ErrorCredencialExistente()
+            raise ValueError("Credencial ya existente")
 
-        password_hashed = self._hash_service.hash_clave(password)
+        self._credenciales[servicio][usuario] = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
 
-        self._credenciales[servicio][usuario] = password_hashed
+        return True
 
     # =====================================================
     # obtener password
