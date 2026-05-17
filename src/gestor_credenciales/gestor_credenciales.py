@@ -1,7 +1,9 @@
-import unittest
-import hashlib
 import bcrypt
-from icontract import require, ensure
+from abc import ABC, abstractmethod
+
+# =========================================================
+# EXCEPCIONES
+# =========================================================
 
 class ErrorPoliticaPassword(Exception):
     pass
@@ -15,161 +17,185 @@ class ErrorServicioNoEncontrado(Exception):
 class ErrorCredencialExistente(Exception):
     pass
 
+# =========================================================
+# INTERFAZ HASH
+# =========================================================
+
+class ServicioHash(ABC):
+    @abstractmethod
+    def hash_clave(self, clave: str) -> bytes:
+        pass
+    @abstractmethod
+    def verificar_clave(self, clave: str, clave_hashed: bytes) -> bool:
+        pass
+
+
+# =========================================================
+# IMPLEMENTACIÓN BCRYPT
+# =========================================================
+
+class ServicioHashBcrypt(ServicioHash):
+    def hash_clave(self, clave: str) -> bytes:
+        return bcrypt.hashpw(clave.encode("utf-8"), bcrypt.gensalt())
+
+    def verificar_clave(self, clave: str, clave_hashed: bytes) -> bool:
+        return bcrypt.checkpw(clave.encode("utf-8"), clave_hashed)
+
+# =========================================================
+# FACTORY METHOD  (GoF)
+# =========================================================
+
+class HashFactory(ABC):
+    """clase base abstracta, declara el factory method"""
+
+    @abstractmethod
+    def crear(self) -> ServicioHash:
+        """las subclases deciden qué instanciar."""
+        pass
+
+    # método que usa el producto sin conocer su clase concreta
+    def obtener_servicio(self) -> ServicioHash:
+        servicio = self.crear()
+        return servicio
+
+
+class BcryptFactory(HashFactory):
+    """fábrica concreta, produce ServicioHashBcrypt."""
+
+    def crear(self) -> ServicioHash:
+        return ServicioHashBcrypt()
+
+
+# registro abierto a extensión sin modificar HashFactory ni BcryptFactory
+_FACTORIES: dict[str, type[HashFactory]] = {"bcrypt": BcryptFactory,}
+
+def registrar_factory(tipo: str, factory: type[HashFactory]) -> None:
+    """permite añadir nuevos algoritmos sin tocar el código existente."""
+    _FACTORIES[tipo] = factory
+
+def obtener_factory(tipo: str = "bcrypt") -> HashFactory:
+    if tipo not in _FACTORIES:
+        raise ValueError(f"Tipo de hash no soportado: {tipo}")
+    return _FACTORIES[tipo]()
+
+# =========================================================
+# VALIDADOR PASSWORD
+# =========================================================
+
+class ValidadorPassword:
+
+    PASSWORDS_COMUNES = {
+        "password", "123456", "12345678",
+        "qwerty", "abc123", "111111",
+        "123123", "admin", "user",
+        "contraseña", "0000000",
+        "seguro", "hola", "abcdefg",
+    }
+
+    SIMBOLOS = set(r"!@#$%^&*()-_=+[]{}|;:',.<>?/`~")
+
+    def verificar_fortaleza(self, password: str) -> str:
+        pass
+
+
+# =========================================================
+# GESTOR CREDENCIALES
+# =========================================================
+
 class GestorCredenciales:
-    def __init__(self, clave_maestra: str):
-        """Inicializa el gestor con una clave maestra."""
-        self._clave_maestra_hashed = self._hash_clave(clave_maestra)
+
+    def __init__(self, clave_maestra: str, tipo_hash: str = "bcrypt"):
+
+        # FACTORY METHOD — la fábrica concreta decide qué ServicioHash crear
+        factory = obtener_factory(tipo_hash)
+        self._hash_service = factory.obtener_servicio()
+
+        self._validator = ValidadorPassword()
+
+        self._clave_maestra_hashed = self._hash_service.hash_clave(clave_maestra)
+
         self._credenciales = {}
 
-    # --- añadir credencial ----------------------------------------------------------------
-    def anadir_credencial(self, clave_maestra: str, servicio: str, usuario: str, password: str) -> bool:
-        simbolos = "!>;'\\/[]{}:\n\r"
-        palabras_peligrosas = ["DROP", "DELETE", "UPDATE", "ALTER", "CREATE", "TABLE", "ALERT", "SCRIPT", "EXECUTE", "IMMEDIATE"]
+    # =====================================================
+    # autenticación
+    # =====================================================
 
-        for valor in [clave_maestra, servicio, usuario, password]:
-            if not isinstance(valor, str):
-                raise TypeError("Todos los parámetros deben ser str")
+    def _autenticar(self, clave_maestra: str):
 
-        clave_maestra = clave_maestra.strip()
-        servicio = servicio.strip()
-        usuario = usuario.strip()
-        password = password.strip()
+        if not self._hash_service.verificar_clave(clave_maestra, self._clave_maestra_hashed):
+            raise ErrorAutenticacion()
 
-        if not self._verificar_clave(clave_maestra, self._clave_maestra_hashed):
-            raise PermissionError
+    # =====================================================
+    # añadir credencial
+    # =====================================================
 
-        if not servicio or not usuario or len(usuario) > 255:
-            raise ValueError
+    def añadir_credencial(self, clave_maestra: str, servicio: str, usuario: str, password: str) -> None:
 
-        if any(c in simbolos for c in usuario) or any(c in simbolos for c in servicio):
-            raise ValueError
+        self._autenticar(clave_maestra)
 
-        if any(p.upper() in palabras_peligrosas for p in servicio.split()):
-            raise ValueError
+        fuerza = self._validator.verificar_fortaleza(password)
 
-        # voy a asumir que verificar_fortaleza_password() es llamado antes de esta función
+        if fuerza == "débil":
+            raise ErrorPoliticaPassword()
+
         if servicio not in self._credenciales:
             self._credenciales[servicio] = {}
 
         if usuario in self._credenciales[servicio]:
-            raise ValueError("Credencial ya existente")
+            raise ErrorCredencialExistente()
 
-        self._credenciales[servicio][usuario] = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
-        return True
-    # ----------------------------------------------------------------------------------------
-    
-    # --- obtener password ----------------------------------------------------------------
-    def obtener_password(self, clave_maestra: str, servicio: str, usuario: str) -> str:
-        """Recupera una contraseña almacenada."""
-        pass
-    # ----------------------------------------------------------------------------------------
-    
-    # --- eliminar credencial ----------------------------------------------------------------
-    def eliminar_credencial(self, clave_maestra: str, servicio: str, usuario: str) -> None:
-        """Elimina una credencial existente."""
+        password_hashed = self._hash_service.hash_clave(password)
 
-        # Validación de tipos
-        if (
-            not isinstance(clave_maestra, str) or
-            not isinstance(servicio, str) or
-            not isinstance(usuario, str)
-        ):
-            raise TypeError
+        self._credenciales[servicio][usuario] = password_hashed
 
-        # Validación de valores vacíos
-        if (
-            clave_maestra.strip() == "" or
-            servicio.strip() == "" or
-            usuario.strip() == ""
-        ):
-            raise ValueError
+    # =====================================================
+    # obtener password
+    # =====================================================
 
-        # Verificar clave maestra
-        if not self._verificar_clave(clave_maestra, self._clave_maestra_hashed):
-            raise ErrorAutenticacion
+    def obtener_password(self, clave_maestra: str, servicio: str, usuario: str) -> bytes:
 
-        # Verificar que exista el servicio
-        if servicio not in self._credenciales:
-            raise ErrorServicioNoEncontrado
+        self._autenticar(clave_maestra)
 
-        # Verificar que exista el usuario
-        if usuario not in self._credenciales[servicio]:
-            raise ErrorServicioNoEncontrado
+        if (servicio not in self._credenciales or usuario not in self._credenciales[servicio]):
+            raise ErrorServicioNoEncontrado()
 
-        # Eliminar credencial
-        del self._credenciales[servicio][usuario]
+        return self._credenciales[servicio][usuario]
 
-        # Eliminar servicio vacío
-        if len(self._credenciales[servicio]) == 0:
-            del self._credenciales[servicio]
+    # =====================================================
+    # listar servicios
+    # =====================================================
 
-    # MEDIACION COMPLETA
-    def cambiar_usuario(self, servicio, usuario_antiguo, usuario_nuevo, clave_maestra):	
-        if not isinstance(servicio, str) or not isinstance(usuario_antiguo, str) or not isinstance(usuario_nuevo, str) or not isinstance(clave_maestra, str):
-            raise TypeError
-
-        if len(servicio) < 1 or len(usuario_antiguo) < 1 or len(usuario_nuevo) < 1:
-            raise ValueError
-        
-        if servicio not in self._credenciales or usuario_antiguo not in self._credenciales[servicio]:
-            raise ValueError
-        
-        if len(usuario_nuevo) > 255:
-            raise ValueError
-        
-        if usuario_nuevo in self._credenciales[servicio]:
-            raise ValueError
-        
-        if usuario_nuevo.strip() == "":
-            raise ValueError
-        
-        substrings = ['<', '>']
-        if any(sub in usuario_nuevo for sub in substrings):
-            raise ValueError
-        
-        if not self._verificar_clave(clave_maestra, self._clave_maestra_hashed): # Mediación completa -> Verificación de permiso ante acceso a cambiar el usuario
-            raise PermissionError
-        
-
-        contraseña_hashed = self._credenciales[servicio].pop(usuario_antiguo)
-        self._credenciales[servicio][usuario_nuevo] = contraseña_hashed
-
-        return True
-
-        
     def listar_servicios(self, clave_maestra: str) -> list:
-        """Lista todos los servicios almacenados."""
-        pass
-    # ----------------------------------------------------------------------------------------
-    
-    # --- hash clave -------------------------------------------------------------------------
-    def _hash_clave(self, clave: str) -> str:
-        """Hashea una clave usando bcrypt."""
-        return bcrypt.hashpw(clave.encode('utf-8'), bcrypt.gensalt())
-    # ----------------------------------------------------------------------------------------
-    
-    # --- verificar clave -------------------------------------------------------------------
-    def _verificar_clave(self, clave: str, clave_hashed: str) -> bool:
-        """Verifica si una clave coincide con su hash."""
-        if isinstance(clave_hashed, str):
-            clave_hashed = clave_hashed.encode("utf-8")
-        return bcrypt.checkpw(clave.encode('utf-8'), clave_hashed)
-    # ----------------------------------------------------------------------------------------
-    
-    # --- listar usuarios --------------------------------------------------------------------
-    def listar_usuarios():
-        pass
-    # ----------------------------------------------------------------------------------------
 
-    # --- verificar fortaleza password -------------------------------------------------------
-    def verificar_fortaleza_password():
-        pass
-    # ----------------------------------------------------------------------------------------
+        self._autenticar(clave_maestra)
 
-    # --- doble factor --------------------------------------------------------------------
-    def doble_factor():
-        pass
-    # ----------------------------------------------------------------------------------------
+        return list(self._credenciales.keys())
+
+    # =====================================================
+    # cambiar usuario
+    # =====================================================
+
+    def cambiar_usuario(self, servicio: str, usuario_antiguo: str, usuario_nuevo: str, clave_maestra: str) -> bool:
+
+        self._autenticar(clave_maestra)
+
+        if not all(isinstance(x, str) and x.strip() for x in [servicio, usuario_antiguo, usuario_nuevo]):
+            raise ValueError()
+
+        if servicio not in self._credenciales:
+            raise ErrorServicioNoEncontrado()
+
+        if usuario_antiguo not in self._credenciales[servicio]:
+            raise ErrorServicioNoEncontrado()
+
+        if usuario_nuevo in self._credenciales[servicio]:
+            raise ErrorCredencialExistente()
+
+        password_hashed = self._credenciales[servicio].pop(usuario_antiguo)
+
+        self._credenciales[servicio][usuario_nuevo] = password_hashed
+
+        return True
 
 #gestor = GestorCredenciales("claveMaestraSegura123!")
 #print(gestor._verificar_clave("clave", gestor._hash_clave("clave")))
