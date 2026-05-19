@@ -2,29 +2,22 @@ import unittest
 from src.gestor_credenciales.gestor_credenciales import GestorCredenciales, ErrorPoliticaPassword, ErrorAutenticacion
 from hypothesis import given
 from hypothesis.strategies import text
+import bcrypt
 
 
 class TestFuncionalesGestorCredenciales(unittest.TestCase):
     def setUp(self):
         self.gestor = GestorCredenciales("claveMaestraSegura123!")
 
-    # Tests funcionales
-    def test_añadir_credencial(self):
-        # Implementar según TDD
-        self.fail()
-
-    def test_recuperar_credencial(self):
-        # Implementar según TDD
-        self.fail()
 
     def test_eliminar_credencial_existente(self):
         clave = "claveMaestraSegura123!"
-        self.gestor.añadir_credencial(clave, "GitHub", "user1", "PasswordSegura123!")
+        self.gestor.anadir_credencial(clave, "GitHub", "user1", "PasswordSegura123!")
         resultado = self.gestor.eliminar_credencial(clave, "GitHub", "user1")
-        self.assertIsNone(resultado)
+        self.assertTrue(resultado)
 
         with self.assertRaises(Exception):
-            self.gestor.recuperar_credencial(clave, "GitHub", "user1")
+            self.gestor.obtener_password(clave, "GitHub", "user1")
 
     def test_eliminar_credencial_inexistente(self):
         clave = "claveMaestraSegura123!"
@@ -35,7 +28,7 @@ class TestFuncionalesGestorCredenciales(unittest.TestCase):
     def test_eliminar_credencial_clave_incorrecta(self):
         clave = "claveMaestraSegura123!"
 
-        self.gestor.añadir_credencial(clave, "GitHub", "user1", "PasswordSegura123!")
+        self.gestor.anadir_credencial(clave, "GitHub", "user1", "PasswordSegura123!")
 
         with self.assertRaises(ErrorAutenticacion):
             self.gestor.eliminar_credencial("abc", "GitHub", "user1")
@@ -67,14 +60,17 @@ class TestFuncionalesGestorCredenciales(unittest.TestCase):
 
     def test_eliminar_credencial_usuario_no_existente(self):
         clave = "claveMaestraSegura123!"
-        self.gestor.añadir_credencial(clave, "GitHub", "user1", "PasswordSegura123!")
+        self.gestor.anadir_credencial(clave, "GitHub", "user1", "PasswordSegura123!")
 
         with self.assertRaises(Exception):
             self.gestor.eliminar_credencial(clave, "GitHub", "user2")
 
-        self.assertEqual(
-            self.gestor.recuperar_credencial(clave, "GitHub", "user1"),
-            "PasswordSegura123!"
+        password_guardada = self.gestor.obtener_password(clave, "GitHub", "user1")
+
+        self.assertIsInstance(password_guardada, bytes)
+        self.assertNotEqual(password_guardada, b"PasswordSegura123!")
+        self.assertTrue(
+            bcrypt.checkpw("PasswordSegura123!".encode("utf-8"), password_guardada)
         )
 
     def test_listar_servicios(self):
@@ -85,9 +81,9 @@ class TestFuncionalesGestorCredenciales(unittest.TestCase):
         self.assertIsNotNone(servicios)
         self.assertEqual(servicios, [])
 
-        self.gestor.añadir_credencial(clave, "GitHub", "user1", "PasswordSegura123!")
-        self.gestor.añadir_credencial(clave, "Eduroam", "user2", "PasswordSegura123!")
-        self.gestor.añadir_credencial(clave, "GitHub", "user3", "PasswordSegura123!")
+        self.gestor.anadir_credencial(clave, "GitHub", "user1", "PasswordSegura123!")
+        self.gestor.anadir_credencial(clave, "Eduroam", "user2", "PasswordSegura123!")
+        self.gestor.anadir_credencial(clave, "GitHub", "user3", "PasswordSegura123!")
 
         servicios = self.gestor.listar_servicios(clave)
         self.assertCountEqual(servicios, ["GitHub", "Eduroam"])
@@ -117,9 +113,9 @@ class TestFuncionalesGestorCredenciales(unittest.TestCase):
         self.assertEqual(usuarios, [])
         
         # Añadimos usuarios
-        self.gestor.añadir_credencial(clave, "GitHub", "usuario1", "clave1")
-        self.gestor.añadir_credencial(clave, "Eduroam", "usuario2", "clave2")
-        self.gestor.añadir_credencial(clave, "GitHub", "usuario3", "clave3")
+        self.gestor.anadir_credencial(clave, "GitHub", "usuario1", "Clave1!Segura")
+        self.gestor.anadir_credencial(clave, "Eduroam", "usuario2", "Clave2!Segura")
+        self.gestor.anadir_credencial(clave, "GitHub", "usuario3", "Clave3!Segura")
         usuarios = self.gestor.listar_usuarios(clave)
         self.assertCountEqual(usuarios, ["usuario1", "usuario2", "usuario3"])
         

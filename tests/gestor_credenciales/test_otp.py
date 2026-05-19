@@ -7,7 +7,7 @@ class Test_OTP(unittest.TestCase):
     def setUp(self):
         self.gestor = GestorCredenciales("claveMaestraSegura123!")
         self.clave = "claveMaestraSegura123!"
-        self.gestor.añadir_credencial(self.clave, "Github", "user1", "Password123!")
+        self.gestor.anadir_credencial(self.clave, "Github", "user1", "Password123!")
 
     def test_generar_otps(self):
 

@@ -13,7 +13,7 @@ class TestObtenerPasswordFuncional:
         self.gestor = GestorCredenciales(self.clave)
 
         # Credencial válida para los tests
-        self.gestor.añadir_credencial(
+        self.gestor.anadir_credencial(
             self.clave,
             "Github",
             "usuario1",
@@ -40,7 +40,7 @@ class TestObtenerPasswordSeguridad:
 
         self.gestor = GestorCredenciales(self.clave)
 
-        self.gestor.añadir_credencial(
+        self.gestor.anadir_credencial(
             self.clave,
             "Github",
             "usuario1",
