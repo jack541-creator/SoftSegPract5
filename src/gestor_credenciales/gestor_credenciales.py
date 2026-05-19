@@ -271,15 +271,16 @@ class GestorCredenciales:
         if any(p.upper() in palabras_peligrosas for p in servicio.split()):
             raise ValueError()
 
-        self._autenticar(clave_maestra)
-
         # voy a asumir que verificar_fortaleza_password() es llamado antes de esta función
         if servicio not in self._credenciales:
+            self._autenticar(clave_maestra) # Mediación completa
             self._credenciales[servicio] = {}
 
+        self._autenticar(clave_maestra) # Mediación completa
         if usuario in self._credenciales[servicio]:
             raise ErrorCredencialExistente()
 
+        self._autenticar(clave_maestra) # Mediación completa
         self._credenciales[servicio][usuario] = bcrypt.hashpw(
             password.encode("utf-8"), bcrypt.gensalt()
         )
@@ -336,7 +337,6 @@ class GestorCredenciales:
     def eliminar_credencial(
         self, clave_maestra: str, servicio: str, usuario: str
     ) -> bool:
-        self._autenticar(clave_maestra)
 
         if servicio not in self._credenciales:
             raise ErrorServicioNoEncontrado()
@@ -344,8 +344,10 @@ class GestorCredenciales:
         if usuario not in self._credenciales[servicio]:
             raise ErrorServicioNoEncontrado()
 
+        self._autenticar(clave_maestra) # Mediación Completa
         del self._credenciales[servicio][usuario]
 
+        self._autenticar(clave_maestra) # Mediación Completa
         if not self._credenciales[servicio]:
             del self._credenciales[servicio]
 
@@ -361,7 +363,6 @@ class GestorCredenciales:
         usuario_nuevo: str,
         clave_maestra: str,
     ) -> bool:
-        self._autenticar(clave_maestra)
 
         if not all(
             isinstance(x, str) and x.strip()
@@ -399,16 +400,22 @@ class GestorCredenciales:
         if usuario_nuevo.replace(".", "", 1).replace("-", "", 1).isdigit():
             raise ValueError()
 
+        self._autenticar(clave_maestra) # Mediación Completa
         if servicio not in self._credenciales:
             raise ErrorServicioNoEncontrado()
 
+        self._autenticar(clave_maestra) # Mediación Completa
         if usuario_antiguo not in self._credenciales[servicio]:
             raise ErrorServicioNoEncontrado()
 
+        self._autenticar(clave_maestra) # Mediación Completa
         if usuario_nuevo in self._credenciales[servicio]:
             raise ErrorCredencialExistente()
 
+        self._autenticar(clave_maestra) # Mediación Completa
         password_hashed = self._credenciales[servicio].pop(usuario_antiguo)
+
+        self._autenticar(clave_maestra) # Mediación Completa
         self._credenciales[servicio][usuario_nuevo] = password_hashed
 
         return True
