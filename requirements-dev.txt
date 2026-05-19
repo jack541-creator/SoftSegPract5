@@ -2,3 +2,6 @@ pytest
 ruff
 bcrypt
 icontract
+string
+random
+hypothesis
