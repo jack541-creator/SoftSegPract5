@@ -314,7 +314,7 @@ class GestorCredenciales:
         ):
             raise ErrorServicioNoEncontrado()
 
-        return self._credenciales[servicio][usuario]
+        return self._credenciales[servicio][usuario]["hash"]
 
     # =====================================================
     # Cambiar password
@@ -347,7 +347,7 @@ class GestorCredenciales:
         if not self.es_password_segura(password_nueva):
             raise ErrorPoliticaPassword()
 
-        self._credenciales[servicio.strip()][usuario.strip()] = bcrypt.hashpw(
+        self._credenciales[servicio.strip()][usuario.strip()]["hash"] = bcrypt.hashpw(
             password_nueva.encode("utf-8"),
             bcrypt.gensalt()
         )
