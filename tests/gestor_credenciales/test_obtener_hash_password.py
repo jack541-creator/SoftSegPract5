@@ -1,8 +1,9 @@
 import pytest
 from icontract import ViolationError
+import bcrypt
 
 from src.gestor_credenciales.gestor_credenciales import GestorCredenciales
-
+from src.gestor_credenciales.gestor_credenciales import ErrorServicioNoEncontrado
 
 class TestObtenerPasswordFuncional:
 
@@ -22,14 +23,14 @@ class TestObtenerPasswordFuncional:
 
     def test_obtener_password_valido(self):
 
-        password = self.gestor.obtener_password(
+        password = self.gestor.obtener_hash_password(
             self.clave,
             "Github",
             "usuario1"
         )
 
-        assert isinstance(password, str)
-        assert password == "Password123!"
+        assert isinstance(password, bytes)
+        assert bcrypt.checkpw("Password123!".encode("utf-8"),password)
 
 
 class TestObtenerPasswordSeguridad:
@@ -49,9 +50,9 @@ class TestObtenerPasswordSeguridad:
 
     def test_usuario_inexistente(self):
 
-        with pytest.raises(ViolationError):
+        with pytest.raises(ErrorServicioNoEncontrado):
 
-            self.gestor.obtener_password(
+            self.gestor.obtener_hash_password(
                 self.clave,
                 "Github",
                 "usuario_fake"
@@ -59,9 +60,9 @@ class TestObtenerPasswordSeguridad:
 
     def test_servicio_inexistente(self):
 
-        with pytest.raises(ViolationError):
+        with pytest.raises(ErrorServicioNoEncontrado):
 
-            self.gestor.obtener_password(
+            self.gestor.obtener_hash_password(
                 self.clave,
                 "Steam",
                 "usuario1"
@@ -69,9 +70,9 @@ class TestObtenerPasswordSeguridad:
 
     def test_usuario_vacio(self):
 
-        with pytest.raises(ViolationError):
+        with pytest.raises(ValueError):
 
-            self.gestor.obtener_password(
+            self.gestor.obtener_hash_password(
                 self.clave,
                 "Github",
                 ""
@@ -79,9 +80,9 @@ class TestObtenerPasswordSeguridad:
 
     def test_tipo_incorrecto(self):
 
-        with pytest.raises(ViolationError):
+        with pytest.raises(TypeError):
 
-            self.gestor.obtener_password(
+            self.gestor.obtener_hash_password(
                 self.clave,
                 "Github",
                 123
