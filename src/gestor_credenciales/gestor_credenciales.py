@@ -290,10 +290,23 @@ class GestorCredenciales:
     # obtener password
     # =====================================================
 
-    def obtener_password(
+    def obtener_hash_password(
         self, clave_maestra: str, servicio: str, usuario: str
     ) -> bytes:
+        
+        for valor in [clave_maestra, servicio, usuario]:
+            if not isinstance(valor, str):
+                raise TypeError("Todos los parámetros deben ser str")
+            
+            if not valor.strip():
+                raise ValueError("Los campos no deben estar vacíos")
+
+        clave_maestra = clave_maestra.strip()
+        servicio = servicio.strip()
+        usuario = usuario.strip()
+
         self._autenticar(clave_maestra)
+
 
         if (
             servicio not in self._credenciales
@@ -301,7 +314,45 @@ class GestorCredenciales:
         ):
             raise ErrorServicioNoEncontrado()
 
-        return self._credenciales[servicio][usuario]["hash"]
+        return self._credenciales[servicio][usuario]
+
+    # =====================================================
+    # Cambiar password
+    # =====================================================
+
+    def cambiar_password(self, clave_maestra: str, servicio: str, usuario: str, password_actual: str, password_nueva: str) -> bool:
+        
+        for valor in [clave_maestra, password_actual, password_nueva]:
+            if not isinstance(valor, str):
+                raise TypeError("Todos los parámetros deben ser str")
+            if not valor.strip():
+                raise ValueError("Los campos no deben estar vacíos")
+
+        clave_maestra = clave_maestra.strip()
+        password_actual = password_actual.strip()
+        password_nueva = password_nueva.strip()
+
+        password_hashed = self.obtener_hash_password(
+            clave_maestra,
+            servicio,
+            usuario
+        )
+
+        if not bcrypt.checkpw(
+            password_actual.encode("utf-8"),
+            password_hashed
+        ):
+            raise ErrorAutenticacion()
+
+        if not self.es_password_segura(password_nueva):
+            raise ErrorPoliticaPassword()
+
+        self._credenciales[servicio.strip()][usuario.strip()] = bcrypt.hashpw(
+            password_nueva.encode("utf-8"),
+            bcrypt.gensalt()
+        )
+
+        return True
 
     # =====================================================
     # es_password_segura (wrapper de verificar_fortaleza)
