@@ -261,7 +261,6 @@ class GestorCredenciales:
         if usuario.replace(".", "", 1).replace("-", "", 1).isdigit():
             raise ValueError()
 
-
         if not servicio or not usuario or len(usuario) > 255:
             raise ValueError()
 
@@ -273,17 +272,17 @@ class GestorCredenciales:
 
         # voy a asumir que verificar_fortaleza_password() es llamado antes de esta función
         if servicio not in self._credenciales:
-            self._autenticar(clave_maestra) # Mediación completa
+            self._autenticar(clave_maestra)  # Mediación completa
             self._credenciales[servicio] = {}
 
-        self._autenticar(clave_maestra) # Mediación completa
+        self._autenticar(clave_maestra)  # Mediación completa
         if usuario in self._credenciales[servicio]:
             raise ErrorCredencialExistente()
 
-        self._autenticar(clave_maestra) # Mediación completa
-        self._credenciales[servicio][usuario] = {"hash" : bcrypt.hashpw(
-            password.encode("utf-8"), bcrypt.gensalt()
-        )}
+        self._autenticar(clave_maestra)  # Mediación completa
+        self._credenciales[servicio][usuario] = {
+            "hash": bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
+        }
 
         return True
 
@@ -303,7 +302,7 @@ class GestorCredenciales:
             raise ErrorServicioNoEncontrado()
 
         return self._credenciales[servicio][usuario]["hash"]
-    
+
     # =====================================================
     # es_password_segura (wrapper de verificar_fortaleza)
     # =====================================================
@@ -337,17 +336,16 @@ class GestorCredenciales:
     def eliminar_credencial(
         self, clave_maestra: str, servicio: str, usuario: str
     ) -> bool:
-
         if servicio not in self._credenciales:
             raise ErrorServicioNoEncontrado()
 
         if usuario not in self._credenciales[servicio]:
             raise ErrorServicioNoEncontrado()
 
-        self._autenticar(clave_maestra) # Mediación Completa
+        self._autenticar(clave_maestra)  # Mediación Completa
         del self._credenciales[servicio][usuario]
 
-        self._autenticar(clave_maestra) # Mediación Completa
+        self._autenticar(clave_maestra)  # Mediación Completa
         if not self._credenciales[servicio]:
             del self._credenciales[servicio]
 
@@ -363,7 +361,6 @@ class GestorCredenciales:
         usuario_nuevo: str,
         clave_maestra: str,
     ) -> bool:
-
         if not all(
             isinstance(x, str) and x.strip()
             for x in [servicio, usuario_antiguo, usuario_nuevo]
@@ -400,22 +397,22 @@ class GestorCredenciales:
         if usuario_nuevo.replace(".", "", 1).replace("-", "", 1).isdigit():
             raise ValueError()
 
-        self._autenticar(clave_maestra) # Mediación Completa
+        self._autenticar(clave_maestra)  # Mediación Completa
         if servicio not in self._credenciales:
             raise ErrorServicioNoEncontrado()
 
-        self._autenticar(clave_maestra) # Mediación Completa
+        self._autenticar(clave_maestra)  # Mediación Completa
         if usuario_antiguo not in self._credenciales[servicio]:
             raise ErrorServicioNoEncontrado()
 
-        self._autenticar(clave_maestra) # Mediación Completa
+        self._autenticar(clave_maestra)  # Mediación Completa
         if usuario_nuevo in self._credenciales[servicio]:
             raise ErrorCredencialExistente()
 
-        self._autenticar(clave_maestra) # Mediación Completa
+        self._autenticar(clave_maestra)  # Mediación Completa
         password_hashed = self._credenciales[servicio].pop(usuario_antiguo)
 
-        self._autenticar(clave_maestra) # Mediación Completa
+        self._autenticar(clave_maestra)  # Mediación Completa
         self._credenciales[servicio][usuario_nuevo] = password_hashed
 
         return True
@@ -425,46 +422,41 @@ class GestorCredenciales:
     # =====================================================
 
     def generar_otps(self, cantidad: int) -> list:
-
         if not isinstance(cantidad, int):
             raise TypeError
 
-        if cantidad <= 0: 
+        if cantidad <= 0:
             raise ValueError
-
 
         caracteres = string.ascii_letters + string.digits
 
-    # SET = no permite duplicados
+        # SET = no permite duplicados
         otps = set()
 
         while len(otps) < cantidad:
-
-            otp = ''.join(random.choice(caracteres) for _ in range(6))
+            otp = "".join(random.choice(caracteres) for _ in range(6))
 
             otps.add(otp)
 
         return list(otps)
 
-    def almacenar_otps(self, clave_maestra: str, servicio: str, usuario: str, otps: list) -> None:
+    def almacenar_otps(
+        self, clave_maestra: str, servicio: str, usuario: str, otps: list
+    ) -> None:
         """
         Almacena las OTPs del usuario.
         Reemplaza las anteriores si existían.
         """
 
-    # Validación básica
+        # Validación básica
         if not isinstance(otps, list):
             raise TypeError
 
-    # Guardar OTPs
+        # Guardar OTPs
         # Guardar COPIA independiente
         self._credenciales[servicio][usuario]["otps"] = otps.copy()
 
-
     def verificar_otp(self, clave_maestra, servicio, usuario, otp):
-
-        print("ENTRANDO EN verificar_otp")
-
         if not isinstance(otp, str):
             return False
 
@@ -472,9 +464,6 @@ class GestorCredenciales:
             return False
 
         if otp in self._credenciales[servicio][usuario]["otps"]:
-
-            print("ELIMINANDO OTP")
-
             self._credenciales[servicio][usuario]["otps"].remove(otp)
 
             return True
