@@ -45,6 +45,24 @@ class ServicioAuditoria(ABC):
         pass
 
 
+# =========================================================
+# OCP: INTERFAZ POLÍTICA DE PASSWORD (Strategy)
+# =========================================================
+
+
+class PoliticaPassword(ABC):
+    """Interfaz para la política de validación de contraseñas.
+
+    Abierta a extensión (nuevas políticas heredan de aquí)
+    y cerrada a modificación (GestorCredenciales no necesita cambiar).
+    """
+
+    @abstractmethod
+    def verificar_fortaleza(self, password: str) -> str:
+        """Devuelve 'débil', 'media' o 'fuerte'."""
+        pass
+
+
 class AuditLogger(ServicioAuditoria):
     def __init__(self, archivo: str = "audit.log"):
         self.archivo = archivo
@@ -112,11 +130,11 @@ def obtener_factory(tipo: str = "bcrypt") -> HashFactory:
 
 
 # =========================================================
-# VALIDADOR PASSWORD
+# VALIDADOR PASSWORD (implementación por defecto de PoliticaPassword)
 # =========================================================
 
 
-class ValidadorPassword:
+class ValidadorPassword(PoliticaPassword):  # <- hereda de PoliticaPassword
     PASSWORDS_COMUNES = {
         "password",
         "123456",
@@ -195,13 +213,20 @@ class ValidadorPassword:
 
 
 class GestorCredenciales:
-    def __init__(self, clave_maestra: str, tipo_hash: str = "bcrypt"):
+    def __init__(
+        self,
+        clave_maestra: str,
+        tipo_hash: str = "bcrypt",
+        politica_password: PoliticaPassword | None = None,  # <- nuevo parámetro OCP
+    ):
         # FACTORY METHOD — la fábrica concreta decide qué ServicioHash crear
         factory = obtener_factory(tipo_hash)
         self._hash_service = factory.obtener_servicio()
 
-        self._validator = ValidadorPassword()
         self._audit_logger = AuditLogger()
+
+        # OCP/Strategy: si no se inyecta ninguna política, se usa la por defecto
+        self._validator = politica_password if politica_password is not None else ValidadorPassword()
 
         self._clave_maestra_hashed = self._hash_service.hash_clave(clave_maestra)
 
@@ -224,9 +249,6 @@ class GestorCredenciales:
     # =====================================================
     # anadir credencial
     # =====================================================
-    # access_control encima para que se ejecute primero
-    # @access_control
-    # @registry(nivel_log="warning")
     def anadir_credencial(
         self,
         clave_maestra: str,
@@ -240,16 +262,8 @@ class GestorCredenciales:
 
         simbolos = "!>;'\\/[]{}:\n\r|&"
         palabras_peligrosas = [
-            "DROP",
-            "DELETE",
-            "UPDATE",
-            "ALTER",
-            "CREATE",
-            "TABLE",
-            "ALERT",
-            "SCRIPT",
-            "EXECUTE",
-            "IMMEDIATE",
+            "DROP", "DELETE", "UPDATE", "ALTER", "CREATE",
+            "TABLE", "ALERT", "SCRIPT", "EXECUTE", "IMMEDIATE",
         ]
 
         for valor in [clave_maestra, servicio, usuario, password]:
@@ -276,16 +290,15 @@ class GestorCredenciales:
         if any(p.upper() in palabras_peligrosas for p in servicio.split()):
             raise ValueError()
 
-        # voy a asumir que verificar_fortaleza_password() es llamado antes de esta función
         if servicio not in self._credenciales:
-            self._autenticar(clave_maestra)  # Mediación completa
+            self._autenticar(clave_maestra)
             self._credenciales[servicio] = {}
 
-        self._autenticar(clave_maestra)  # Mediación completa
+        self._autenticar(clave_maestra)
         if usuario in self._credenciales[servicio]:
             raise ErrorCredencialExistente()
 
-        self._autenticar(clave_maestra)  # Mediación completa
+        self._autenticar(clave_maestra)
         self._credenciales[servicio][usuario] = {
             "hash": bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
         }
@@ -397,7 +410,6 @@ class GestorCredenciales:
 
     def listar_servicios(self, clave_maestra: str) -> list:
         self._autenticar(clave_maestra)
-
         return list(self._credenciales.keys())
 
     # =====================================================
@@ -424,10 +436,10 @@ class GestorCredenciales:
         if usuario not in self._credenciales[servicio]:
             raise ErrorServicioNoEncontrado()
 
-        self._autenticar(clave_maestra)  # Mediación Completa
+        self._autenticar(clave_maestra)
         del self._credenciales[servicio][usuario]
 
-        self._autenticar(clave_maestra)  # Mediación Completa
+        self._autenticar(clave_maestra)
         if not self._credenciales[servicio]:
             del self._credenciales[servicio]
 
@@ -460,16 +472,8 @@ class GestorCredenciales:
 
         simbolos_invalidos = "!>;'\\/[]{}:\n\r"
         palabras_peligrosas = [
-            "DROP",
-            "DELETE",
-            "UPDATE",
-            "ALTER",
-            "CREATE",
-            "TABLE",
-            "ALERT",
-            "SCRIPT",
-            "EXECUTE",
-            "IMMEDIATE",
+            "DROP", "DELETE", "UPDATE", "ALTER", "CREATE",
+            "TABLE", "ALERT", "SCRIPT", "EXECUTE", "IMMEDIATE",
         ]
 
         if len(usuario_nuevo) > 255:
@@ -484,22 +488,22 @@ class GestorCredenciales:
         if usuario_nuevo.replace(".", "", 1).replace("-", "", 1).isdigit():
             raise ValueError()
 
-        self._autenticar(clave_maestra)  # Mediación Completa
+        self._autenticar(clave_maestra)
         if servicio not in self._credenciales:
             raise ErrorServicioNoEncontrado()
 
-        self._autenticar(clave_maestra)  # Mediación Completa
+        self._autenticar(clave_maestra)
         if usuario_antiguo not in self._credenciales[servicio]:
             raise ErrorServicioNoEncontrado()
 
-        self._autenticar(clave_maestra)  # Mediación Completa
+        self._autenticar(clave_maestra)
         if usuario_nuevo in self._credenciales[servicio]:
             raise ErrorCredencialExistente()
 
-        self._autenticar(clave_maestra)  # Mediación Completa
+        self._autenticar(clave_maestra)
         password_hashed = self._credenciales[servicio].pop(usuario_antiguo)
 
-        self._autenticar(clave_maestra)  # Mediación Completa
+        self._autenticar(clave_maestra)
         self._credenciales[servicio][usuario_nuevo] = password_hashed
 
         self._audit_logger.registrar_evento(
@@ -522,12 +526,10 @@ class GestorCredenciales:
 
         caracteres = string.ascii_letters + string.digits
 
-        # SET = no permite duplicados
         otps = set()
 
         while len(otps) < cantidad:
             otp = "".join(random.choice(caracteres) for _ in range(6))
-
             otps.add(otp)
 
         return list(otps)
@@ -535,19 +537,11 @@ class GestorCredenciales:
     def almacenar_otps(
         self, clave_maestra: str, servicio: str, usuario: str, otps: list
     ) -> None:
-        """
-        Almacena las OTPs del usuario.
-        Reemplaza las anteriores si existían.
-        """
-
-        # Validación básica
         if not isinstance(otps, list):
             raise TypeError
 
         self._autenticar(clave_maestra)
 
-        # Guardar OTPs
-        # Guardar COPIA independiente
         self._credenciales[servicio][usuario]["otps"] = otps.copy()
 
         self._audit_logger.registrar_evento(
