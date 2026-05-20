@@ -1,6 +1,7 @@
 import bcrypt, string, random
 from abc import ABC, abstractmethod
 from datetime import datetime, UTC
+from enum import Enum
 
 # =========================================================
 # EXCEPCIONES
@@ -21,6 +22,7 @@ class ErrorServicioNoEncontrado(Exception):
 
 class ErrorCredencialExistente(Exception):
     pass
+
 
 
 # =========================================================
@@ -46,6 +48,17 @@ class ServicioAuditoria(ABC):
 
 
 # =========================================================
+# ENUM FORTALEZA
+# =========================================================
+
+
+class FortalezaPassword(str, Enum):
+    DEBIL  = "débil"
+    MEDIA  = "media"
+    FUERTE = "fuerte"
+
+
+# =========================================================
 # OCP: INTERFAZ POLÍTICA DE PASSWORD (Strategy)
 # =========================================================
 
@@ -58,9 +71,20 @@ class PoliticaPassword(ABC):
     """
 
     @abstractmethod
-    def verificar_fortaleza(self, password: str) -> str:
-        """Devuelve 'débil', 'media' o 'fuerte'."""
+    def verificar_fortaleza(self, password: str) -> FortalezaPassword:
+        """Devuelve 'débil', 'media' o 'fuerte' desde FortalezaPassword"""
         pass
+
+    def es_aceptable(self, password: str) -> bool:
+        """
+        Define qué fortalezas se consideran suficientes.
+        Las subclases pueden sobrescribir esto si necesitan
+        un umbral distinto, pero siempre operan sobre FortalezaPassword.
+        """
+        return self.verificar_fortaleza(password) in (
+            FortalezaPassword.MEDIA,
+            FortalezaPassword.FUERTE,
+        )
 
 
 class AuditLogger(ServicioAuditoria):
@@ -156,7 +180,7 @@ class ValidadorPassword(PoliticaPassword):  # <- hereda de PoliticaPassword
 
     TRIVIALES = ["12345", "qwerty"]
 
-    def verificar_fortaleza(self, password: str) -> str:
+    def verificar_fortaleza(self, password: str) -> FortalezaPassword:
         # ---------- Validación de entrada ----------
         if not isinstance(password, str) or password == "":
             raise ErrorPoliticaPassword()
@@ -200,11 +224,11 @@ class ValidadorPassword(PoliticaPassword):  # <- hereda de PoliticaPassword
 
         # ---------- Clasificación ----------
         if criterios <= 1:
-            return "débil"
+            return FortalezaPassword.DEBIL
         elif criterios <= 3:
-            return "media"
+            return FortalezaPassword.MEDIA
         else:
-            return "fuerte"
+            return FortalezaPassword.FUERTE
 
 
 # =========================================================
@@ -300,7 +324,7 @@ class GestorCredenciales:
 
         self._autenticar(clave_maestra)
         self._credenciales[servicio][usuario] = {
-            "hash": bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
+            "hash": self._hash_service.hash_clave(password)
         }
 
         self._audit_logger.registrar_evento(
@@ -376,7 +400,7 @@ class GestorCredenciales:
             usuario,
         )
 
-        if not bcrypt.checkpw(password_actual.encode("utf-8"), password_hashed):
+        if not self._hash_service.verificar_clave(password_actual, password_hashed):
             self._audit_logger.registrar_evento(
                 "CAMBIO_PASSWORD_FALLIDO",
                 f"Servicio={servicio}, Usuario={usuario}",
@@ -386,10 +410,7 @@ class GestorCredenciales:
         if not self.es_password_segura(password_nueva):
             raise ErrorPoliticaPassword()
 
-        self._credenciales[servicio.strip()][usuario.strip()]["hash"] = bcrypt.hashpw(
-            password_nueva.encode("utf-8"),
-            bcrypt.gensalt(),
-        )
+        self._credenciales[servicio.strip()][usuario.strip()]["hash"] = self._hash_service.hash_clave(password_nueva)
 
         self._audit_logger.registrar_evento(
             "PASSWORD_CAMBIADA",
@@ -399,10 +420,10 @@ class GestorCredenciales:
         return True
 
     # =====================================================
-    # es_password_segura (wrapper de verificar_fortaleza)
+    # es_password_segura (wrapper de es_aceptable)
     # =====================================================
     def es_password_segura(self, password: str) -> bool:
-        return self._validator.verificar_fortaleza(password) in ["media", "fuerte"]
+        return self._validator.es_aceptable(password)
 
     # =====================================================
     # listar servicios
@@ -516,7 +537,7 @@ class GestorCredenciales:
     # =====================================================
     # OTPs
     # =====================================================
-    
+
 
     def generar_otps(self, cantidad: int) -> list:
 
@@ -595,5 +616,3 @@ class GestorCredenciales:
             return True
 
         return False
-
-
