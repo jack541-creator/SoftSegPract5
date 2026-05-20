@@ -1,5 +1,10 @@
 import unittest
-from src.gestor_credenciales.gestor_credenciales import ValidadorPassword, ErrorPoliticaPassword
+from src.gestor_credenciales.gestor_credenciales import (
+    ValidadorPassword,
+    ErrorPoliticaPassword,
+    PoliticaPassword,      # <- nuevo import
+    GestorCredenciales,    # <- nuevo import
+)
 
 # contraseñas típicas
 PASSWORDS_COMUNES = {
@@ -131,13 +136,11 @@ class TestVerificarFortalezaPassword(unittest.TestCase):
 
     def test_dos_criterios_es_media(self):
         """Cumplir exactamente 2 criterios la hace media."""
-        # longitud (>=8) + no común, sin mezcla ni símbolo interior
         resultado = self.validador.verificar_fortaleza("clavemediosegura")
         self.assertEqual(resultado, "media")
 
     def test_tres_criterios_es_media(self):
         """Cumplir 3 criterios → media."""
-        # longitud + mezcla + no común, símbolo solo al final
         resultado = self.validador.verificar_fortaleza("conTraSeña73")
         self.assertEqual(resultado, "media")
 
@@ -160,6 +163,29 @@ class TestVerificarFortalezaPassword(unittest.TestCase):
         for pwd in ("abc", "abcdefg", "MiPassword!", "m!Clave#99"):
             with self.subTest(password=pwd):
                 self.assertIn(self.validador.verificar_fortaleza(pwd), resultado)
+
+    # =========================================================
+    # OCP: demostración con política alternativa (Strategy)
+    # =========================================================
+
+    def test_gestor_acepta_politica_externa(self):
+        """OCP: el gestor usa la política inyectada sin modificar su código."""
+
+        class PoliticaSiempreDebil(PoliticaPassword):
+            def verificar_fortaleza(self, password: str) -> str:
+                return "débil"
+
+        gestor = GestorCredenciales(
+            "MasterPass1!",
+            politica_password=PoliticaSiempreDebil(),
+        )
+        # Aunque la contraseña sería "fuerte" con la política por defecto,
+        # la política inyectada siempre devuelve "débil" → debe rechazarla
+        with self.assertRaises(ErrorPoliticaPassword):
+            gestor.anadir_credencial(
+                "MasterPass1!", "gmail", "usuario", "m!Clave#99"
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
