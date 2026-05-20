@@ -17,7 +17,7 @@ class TestEliminiarCredencial(unittest.TestCase):
         self.assertTrue(resultado)
 
         with self.assertRaises(Exception):
-            self.gestor.obtener_password(self.clave, "GitHub", "user1")
+            self.gestor.obtener_hash_password(self.clave, "GitHub", "user1")
 
 
     def test_eliminar_credencial_inexistente(self):
@@ -63,7 +63,7 @@ class TestEliminiarCredencial(unittest.TestCase):
         with self.assertRaises(Exception):
             self.gestor.eliminar_credencial(self.clave, "GitHub", "user2")
 
-        password_guardada = self.gestor.obtener_password(self.clave, "GitHub", "user1")
+        password_guardada = self.gestor.obtener_hash_password(self.clave, "GitHub", "user1")
 
         self.assertIsInstance(password_guardada, bytes)
         self.assertNotEqual(password_guardada, b"PasswordSegura123!")
