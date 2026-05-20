@@ -516,8 +516,10 @@ class GestorCredenciales:
     # =====================================================
     # OTPs
     # =====================================================
+    
 
     def generar_otps(self, cantidad: int) -> list:
+
         if not isinstance(cantidad, int):
             raise TypeError
 
@@ -529,27 +531,48 @@ class GestorCredenciales:
         otps = set()
 
         while len(otps) < cantidad:
-            otp = "".join(random.choice(caracteres) for _ in range(6))
+
+            otp = "".join(
+                random.choice(caracteres)
+                for _ in range(6)
+        )
+
             otps.add(otp)
 
         return list(otps)
 
+
     def almacenar_otps(
-        self, clave_maestra: str, servicio: str, usuario: str, otps: list
-    ) -> None:
+    self,
+    clave_maestra: str,
+    servicio: str,
+    usuario: str,
+    otps: list
+) -> None:
+
         if not isinstance(otps, list):
             raise TypeError
 
         self._autenticar(clave_maestra)
 
-        self._credenciales[servicio][usuario]["otps"] = otps.copy()
+        self._credenciales[servicio][usuario]["otps"] = (
+            otps.copy()
+    )
 
         self._audit_logger.registrar_evento(
             "OTPS_ALMACENADAS",
-            f"Servicio={servicio}, Usuario={usuario}",
+            f"Servicio={servicio}, Usuario={usuario}"
         )
 
-    def verificar_otp(self, clave_maestra, servicio, usuario, otp):
+
+    def verificar_otp(
+        self,
+        clave_maestra: str,
+        servicio: str,
+        usuario: str,
+        otp: str
+    ) -> bool:
+
         if not isinstance(otp, str):
             return False
 
@@ -559,13 +582,18 @@ class GestorCredenciales:
         self._autenticar(clave_maestra)
 
         if otp in self._credenciales[servicio][usuario]["otps"]:
-            self._credenciales[servicio][usuario]["otps"].remove(otp)
+
+            self._credenciales[servicio][usuario]["otps"].remove(
+                otp
+        )
 
             self._audit_logger.registrar_evento(
                 "OTP_VERIFICADO",
-                f"Servicio={servicio}, Usuario={usuario}",
-            )
+                f"Servicio={servicio}, Usuario={usuario}"
+        )
 
             return True
 
         return False
+
+
