@@ -2,8 +2,8 @@ import unittest
 from src.gestor_credenciales.gestor_credenciales import (
     ValidadorPassword,
     ErrorPoliticaPassword,
-    PoliticaPassword,      # <- nuevo import
-    GestorCredenciales,    # <- nuevo import
+    PoliticaPassword,    
+    GestorCredenciales, 
 )
 
 # contraseñas típicas
