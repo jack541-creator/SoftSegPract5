@@ -224,7 +224,9 @@ class GestorCredenciales:
     # =====================================================
     # anadir credencial
     # =====================================================
-
+    # access_control encima para que se ejecute primero
+    # @access_control
+    # @registry(nivel_log="warning")
     def anadir_credencial(
         self,
         clave_maestra: str,
