@@ -70,7 +70,7 @@ class TestSeguridadGestorCredenciales(unittest.TestCase):
         self.gestor.anadir_credencial("claveMaestraSegura123!", "GitHub", "user1", "PasswordSegura123!")
 
         with self.assertRaises(ErrorAutenticacion):
-            self.gestor.obtener_password("claveIncorrecta", "GitHub", "user1")
+            self.gestor.obtener_hash_password("claveIncorrecta", "GitHub", "user1")
 
 
 if __name__ == "__main__":
