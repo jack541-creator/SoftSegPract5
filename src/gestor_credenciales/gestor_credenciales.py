@@ -1,5 +1,6 @@
 import bcrypt, string, random
 from abc import ABC, abstractmethod
+from datetime import datetime, UTC
 
 # =========================================================
 # EXCEPCIONES
@@ -22,22 +23,6 @@ class ErrorCredencialExistente(Exception):
     pass
 
 
-class ErrorCodigoNoEstablecido(Exception):
-    pass
-
-
-class ErrorSinIntentosRestantes(Exception):
-    pass
-
-
-class ErrorUsuarioYaVerificado(Exception):
-    pass
-
-
-class ErrorCorreoNoEstablecido(Exception):
-    pass
-
-
 # =========================================================
 # INTERFAZ HASH
 # =========================================================
@@ -51,6 +36,23 @@ class ServicioHash(ABC):
     @abstractmethod
     def verificar_clave(self, clave: str, clave_hashed: bytes) -> bool:
         pass
+
+
+# ISP: interfaz pequeña solo para auditoría
+class ServicioAuditoria(ABC):
+    @abstractmethod
+    def registrar_evento(self, accion: str, detalle: str) -> None:
+        pass
+
+
+class AuditLogger(ServicioAuditoria):
+    def __init__(self, archivo: str = "audit.log"):
+        self.archivo = archivo
+
+    def registrar_evento(self, accion: str, detalle: str) -> None:
+        timestamp = datetime.now(UTC).isoformat()
+        with open(self.archivo, "a", encoding="utf-8") as f:
+            f.write(f"{timestamp} | {accion} | {detalle}\n")
 
 
 # =========================================================
@@ -199,6 +201,7 @@ class GestorCredenciales:
         self._hash_service = factory.obtener_servicio()
 
         self._validator = ValidadorPassword()
+        self._audit_logger = AuditLogger()
 
         self._clave_maestra_hashed = self._hash_service.hash_clave(clave_maestra)
 
@@ -212,15 +215,16 @@ class GestorCredenciales:
         if not self._hash_service.verificar_clave(
             clave_maestra, self._clave_maestra_hashed
         ):
+            self._audit_logger.registrar_evento(
+                "AUTENTICACION_FALLIDA",
+                "Clave maestra incorrecta",
+            )
             raise ErrorAutenticacion()
 
     # =====================================================
     # anadir credencial
     # =====================================================
 
-    # access_control encima para que se ejecute primero
-    # @access_control
-    # @registry(nivel_log="warning")
     def anadir_credencial(
         self,
         clave_maestra: str,
@@ -284,6 +288,11 @@ class GestorCredenciales:
             "hash": bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
         }
 
+        self._audit_logger.registrar_evento(
+            "CREDENCIAL_ANADIDA",
+            f"Servicio={servicio}, Usuario={usuario}",
+        )
+
         return True
 
     # =====================================================
@@ -293,11 +302,10 @@ class GestorCredenciales:
     def obtener_hash_password(
         self, clave_maestra: str, servicio: str, usuario: str
     ) -> bytes:
-        
         for valor in [clave_maestra, servicio, usuario]:
             if not isinstance(valor, str):
                 raise TypeError("Todos los parámetros deben ser str")
-            
+
             if not valor.strip():
                 raise ValueError("Los campos no deben estar vacíos")
 
@@ -307,21 +315,36 @@ class GestorCredenciales:
 
         self._autenticar(clave_maestra)
 
-
         if (
             servicio not in self._credenciales
             or usuario not in self._credenciales[servicio]
         ):
             raise ErrorServicioNoEncontrado()
 
+        self._audit_logger.registrar_evento(
+            "CREDENCIAL_CONSULTADA",
+            f"Servicio={servicio}, Usuario={usuario}",
+        )
+
         return self._credenciales[servicio][usuario]["hash"]
+
+    def obtener_password(
+        self, clave_maestra: str, servicio: str, usuario: str
+    ) -> bytes:
+        return self.obtener_hash_password(clave_maestra, servicio, usuario)
 
     # =====================================================
     # Cambiar password
     # =====================================================
 
-    def cambiar_password(self, clave_maestra: str, servicio: str, usuario: str, password_actual: str, password_nueva: str) -> bool:
-        
+    def cambiar_password(
+        self,
+        clave_maestra: str,
+        servicio: str,
+        usuario: str,
+        password_actual: str,
+        password_nueva: str,
+    ) -> bool:
         for valor in [clave_maestra, password_actual, password_nueva]:
             if not isinstance(valor, str):
                 raise TypeError("Todos los parámetros deben ser str")
@@ -335,13 +358,14 @@ class GestorCredenciales:
         password_hashed = self.obtener_hash_password(
             clave_maestra,
             servicio,
-            usuario
+            usuario,
         )
 
-        if not bcrypt.checkpw(
-            password_actual.encode("utf-8"),
-            password_hashed
-        ):
+        if not bcrypt.checkpw(password_actual.encode("utf-8"), password_hashed):
+            self._audit_logger.registrar_evento(
+                "CAMBIO_PASSWORD_FALLIDO",
+                f"Servicio={servicio}, Usuario={usuario}",
+            )
             raise ErrorAutenticacion()
 
         if not self.es_password_segura(password_nueva):
@@ -349,7 +373,12 @@ class GestorCredenciales:
 
         self._credenciales[servicio.strip()][usuario.strip()]["hash"] = bcrypt.hashpw(
             password_nueva.encode("utf-8"),
-            bcrypt.gensalt()
+            bcrypt.gensalt(),
+        )
+
+        self._audit_logger.registrar_evento(
+            "PASSWORD_CAMBIADA",
+            f"Servicio={servicio.strip()}, Usuario={usuario.strip()}",
         )
 
         return True
@@ -399,6 +428,11 @@ class GestorCredenciales:
         self._autenticar(clave_maestra)  # Mediación Completa
         if not self._credenciales[servicio]:
             del self._credenciales[servicio]
+
+        self._audit_logger.registrar_evento(
+            "CREDENCIAL_ELIMINADA",
+            f"Servicio={servicio}, Usuario={usuario}",
+        )
 
         return True
 
@@ -466,6 +500,11 @@ class GestorCredenciales:
         self._autenticar(clave_maestra)  # Mediación Completa
         self._credenciales[servicio][usuario_nuevo] = password_hashed
 
+        self._audit_logger.registrar_evento(
+            "USUARIO_CAMBIADO",
+            f"Servicio={servicio}, Usuario antiguo={usuario_antiguo}, Usuario nuevo={usuario_nuevo}",
+        )
+
         return True
 
     # =====================================================
@@ -503,9 +542,16 @@ class GestorCredenciales:
         if not isinstance(otps, list):
             raise TypeError
 
+        self._autenticar(clave_maestra)
+
         # Guardar OTPs
         # Guardar COPIA independiente
         self._credenciales[servicio][usuario]["otps"] = otps.copy()
+
+        self._audit_logger.registrar_evento(
+            "OTPS_ALMACENADAS",
+            f"Servicio={servicio}, Usuario={usuario}",
+        )
 
     def verificar_otp(self, clave_maestra, servicio, usuario, otp):
         if not isinstance(otp, str):
@@ -514,9 +560,16 @@ class GestorCredenciales:
         if len(otp) != 6:
             return False
 
+        self._autenticar(clave_maestra)
+
         if otp in self._credenciales[servicio][usuario]["otps"]:
             self._credenciales[servicio][usuario]["otps"].remove(otp)
+
+            self._audit_logger.registrar_evento(
+                "OTP_VERIFICADO",
+                f"Servicio={servicio}, Usuario={usuario}",
+            )
+
             return True
 
         return False
-
