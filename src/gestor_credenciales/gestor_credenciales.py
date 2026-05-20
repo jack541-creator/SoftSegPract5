@@ -516,9 +516,7 @@ class GestorCredenciales:
 
         if otp in self._credenciales[servicio][usuario]["otps"]:
             self._credenciales[servicio][usuario]["otps"].remove(otp)
-
             return True
 
         return False
 
-        return True
