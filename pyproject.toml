@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "criptocoin"
+version = "1.0.0"
+description = "Sistema de criptomoneda con gestor de credenciales integrado"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "CriptoCoin Team" }]
+
+dependencies = [
+    "icontract>=2.6",
+    "bcrypt>=4.0",
+]
+
+[project.scripts]
+criptocoin = "criptocoin.gui:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
