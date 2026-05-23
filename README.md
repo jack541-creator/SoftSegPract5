@@ -1,4 +1,4 @@
-# ₿ CriptoCoin
+# ₿ CipherCoin
 
 Sistema de criptomoneda con interfaz gráfica, gestor de credenciales integrado, sistema de reputación y comisiones por intervalos.
 
@@ -74,10 +74,10 @@ criptocoin/
 
 | Intervalo de importe | Tasa base | Descuento por reputación |
 |----------------------|-----------|--------------------------|
-| [0, 5) ₿            | 1 %       | −0,1 % por punto         |
-| [5, 20) ₿           | 5 %       | −0,1 % por punto         |
-| [20, 50) ₿          | 10 %      | −0,1 % por punto         |
-| [50, ∞) ₿           | 15 %      | −0,1 % por punto         |
+| [0, 5) ₿             | 1 %       | −0,1 % por punto         |
+| [5, 20) ₿            | 5 %       | −0,1 % por punto         |
+| [20, 50) ₿           | 10 %      | −0,1 % por punto         |
+| [50, ∞) ₿            | 15 %      | −0,1 % por punto         |
 
 La comisión mínima es siempre **0 %** (nunca negativa).
 
@@ -105,13 +105,13 @@ python -m unittest discover -s tests -v
 
 ## Patrones de diseño aplicados
 
-| Patrón        | Dónde                                   |
-|---------------|-----------------------------------------|
-| Strategy      | `EstrategiaComision` / `ComisionPorIntervalos` |
-| Facade        | `SistemaCriptoCoin`                     |
-| Proxy         | `ProxySeguroGestorCredenciales` (original) |
-| Factory Method| `Wallet.generar_direccion`              |
-| Observer (log)| `ServicioAuditoriaCripto`               |
+| Patrón         | Dónde                                          |
+|----------------|------------------------------------------------|
+| Strategy       | `EstrategiaComision` / `ComisionPorIntervalos` |
+| Facade         | `SistemaCriptoCoin`                            |
+| Proxy          | `ProxySeguroGestorCredenciales` (original)     |
+| Factory Method | `Wallet.generar_direccion`                     |
+| Observer (log) | `ServicioAuditoriaCripto`                      |
 
 ---
 
