@@ -29,7 +29,7 @@ python main.py
 
 ```bash
 pip install -e .
-criptocoin
+ciphercoin
 ```
 
 ---
@@ -41,7 +41,7 @@ criptocoin
 | `alice`    | `Alice#Coin2024!`   | Usuario | Alice (Usuario)    |
 | `bob`      | `Bob#Coin2024!`     | Usuario | Bob (Usuario)      |
 | `techpyme` | `TechPyme#Coin2024!`| PYME    | TechPyme S.L.      |
-| `estado`   | `Estado#Coin2024!`  | Admin   | Estado CriptoCoin  |
+| `estado`   | `Estado#Coin2024!`  | Admin   | Estado ciphercoin  |
 
 > La pantalla de login muestra estas credenciales y permite autocompletarlas con el botón `↑`.
 
@@ -50,7 +50,7 @@ criptocoin
 ## Arquitectura
 
 ```
-criptocoin/
+ciphercoin/
 ├── main.py                          # Punto de entrada
 ├── pyproject.toml
 ├── README.md
@@ -59,12 +59,12 @@ criptocoin/
 │   │   ├── gestor_credenciales.py
 │   │   ├── proxy_seguro.py
 │   │   └── utils.py
-│   └── criptocoin/
+│   └── ciphercoin/
 │       ├── modelo.py                # Dominio: Wallet, Transaccion, Blockchain, Comisiones
 │       ├── autenticacion.py         # Integración GestorCredenciales ↔ Wallets
 │       └── gui.py                   # Interfaz gráfica tkinter
 └── tests/
-    └── criptocoin/
+    └── ciphercoin/
         └── test_modelo.py           # Suite de tests
 ```
 
@@ -108,7 +108,7 @@ python -m unittest discover -s tests -v
 | Patrón         | Dónde                                          |
 |----------------|------------------------------------------------|
 | Strategy       | `EstrategiaComision` / `ComisionPorIntervalos` |
-| Facade         | `SistemaCriptoCoin`                            |
+| Facade         | `Sistemaciphercoin`                            |
 | Proxy          | `ProxySeguroGestorCredenciales` (original)     |
 | Factory Method | `Wallet.generar_direccion`                     |
 | Observer (log) | `ServicioAuditoriaCripto`                      |
@@ -122,4 +122,4 @@ python -m unittest discover -s tests -v
 - Cada transacción genera un **hash SHA-256** de integridad.
 - La blockchain enlaza bloques mediante hash, permitiendo detectar manipulaciones.
 - Todos los contratos de precondición/postcondición se validan con **icontract**.
-- Se genera un log de auditoría en `criptocoin_audit.log`.
+- Se genera un log de auditoría en `ciphercoin_audit.log`.

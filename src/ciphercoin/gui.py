@@ -1,5 +1,5 @@
 """
-gui.py — Interfaz gráfica de CriptoCoin (tkinter).
+gui.py — Interfaz gráfica de ciphercoin (tkinter).
 
 Pantallas:
   • LoginFrame   — autenticación con el GestorCredenciales
@@ -18,17 +18,17 @@ from tkinter import ttk, messagebox
 from typing import Optional
 import threading
 
-from criptocoin.modelo import (
-    SistemaCriptoCoin,
+from ciphercoin.modelo import (
+    Sistemaciphercoin,
     TipoWallet,
     ErrorSaldoInsuficiente,
     ErrorWalletNoEncontrada,
     ErrorTransaccionInvalida,
 )
-from criptocoin.autenticacion import (
+from ciphercoin.autenticacion import (
     ServicioAutenticacion,
-    SesionCriptoCoin,
-    ErrorSesionCriptoCoin,
+    Sesionciphercoin,
+    ErrorSesionciphercoin,
 )
 
 
@@ -149,7 +149,7 @@ class LoginFrame(tk.Frame):
     Muestra las credenciales de demo y delega en ServicioAutenticacion.
     """
 
-    def __init__(self, master: "AppCriptoCoin"):
+    def __init__(self, master: "Appciphercoin"):
         super().__init__(master, bg=COLORES["fondo"])
         self._app = master
         self._construir()
@@ -160,7 +160,7 @@ class LoginFrame(tk.Frame):
         # ── Logo / título ──────────────────────────────────────────
         tk.Label(
             self,
-            text="₿ CriptoCoin",
+            text="₿ ciphercoin",
             bg=COLORES["fondo"],
             fg=COLORES["acento"],
             font=("Segoe UI", 32, "bold"),
@@ -276,7 +276,7 @@ class LoginFrame(tk.Frame):
             self._lbl_error.config(text="")
             self._app.unbind("<Return>")
             self._app.mostrar_dashboard(sesion)
-        except ErrorSesionCriptoCoin as e:
+        except ErrorSesionciphercoin as e:
             self._lbl_error.config(text=str(e))
 
 
@@ -287,7 +287,7 @@ class LoginFrame(tk.Frame):
 class DashboardFrame(tk.Frame):
     """Panel principal tras el login."""
 
-    def __init__(self, master: "AppCriptoCoin", sesion: SesionCriptoCoin):
+    def __init__(self, master: "Appciphercoin", sesion: Sesionciphercoin):
         super().__init__(master, bg=COLORES["fondo"])
         self._app    = master
         self._sesion = sesion
@@ -302,7 +302,7 @@ class DashboardFrame(tk.Frame):
 
         tk.Label(
             barra,
-            text="₿ CriptoCoin",
+            text="₿ ciphercoin",
             bg=COLORES["fondo_card"],
             fg=COLORES["acento"],
             font=("Segoe UI", 16, "bold"),
@@ -567,12 +567,12 @@ class VentanaTransferencia(tk.Toplevel):
 
     def __init__(
         self,
-        master: "AppCriptoCoin",
-        sesion: SesionCriptoCoin,
+        master: "Appciphercoin",
+        sesion: Sesionciphercoin,
         dashboard: DashboardFrame,
     ):
         super().__init__(master)
-        self.title("Nueva transferencia — CriptoCoin")
+        self.title("Nueva transferencia — ciphercoin")
         self.configure(bg=COLORES["fondo"])
         self.resizable(False, False)
         self.grab_set()
@@ -738,9 +738,9 @@ class VentanaTransferencia(tk.Toplevel):
 class VentanaHistorial(tk.Toplevel):
     """Historial completo de transacciones de la wallet activa."""
 
-    def __init__(self, master: "AppCriptoCoin", sesion: SesionCriptoCoin):
+    def __init__(self, master: "Appciphercoin", sesion: Sesionciphercoin):
         super().__init__(master)
-        self.title("Historial de transacciones — CriptoCoin")
+        self.title("Historial de transacciones — ciphercoin")
         self.configure(bg=COLORES["fondo"])
         self.grab_set()
 
@@ -808,9 +808,9 @@ class VentanaHistorial(tk.Toplevel):
 class VentanaAdmin(tk.Toplevel):
     """Panel de administración del sistema (wallet de estado)."""
 
-    def __init__(self, master: "AppCriptoCoin"):
+    def __init__(self, master: "Appciphercoin"):
         super().__init__(master)
-        self.title("Panel de administración — CriptoCoin")
+        self.title("Panel de administración — ciphercoin")
         self.configure(bg=COLORES["fondo"])
         self.grab_set()
         self._app = master
@@ -920,23 +920,23 @@ class VentanaAdmin(tk.Toplevel):
 # APLICACIÓN PRINCIPAL
 # =========================================================
 
-class AppCriptoCoin(tk.Tk):
+class Appciphercoin(tk.Tk):
     """
-    Ventana raíz de la aplicación CriptoCoin.
+    Ventana raíz de la aplicación ciphercoin.
 
-    Instancia el SistemaCriptoCoin y el ServicioAutenticacion
+    Instancia el Sistemaciphercoin y el ServicioAutenticacion
     y gestiona la navegación entre pantallas.
     """
 
     def __init__(self):
         super().__init__()
-        self.title("CriptoCoin — Sistema de Criptomoneda")
+        self.title("ciphercoin — Sistema de Criptomoneda")
         self.configure(bg=COLORES["fondo"])
         self.geometry("900x680")
         self.minsize(760, 560)
 
         # modelo de dominio
-        self.sistema = SistemaCriptoCoin()
+        self.sistema = Sistemaciphercoin()
         self.auth    = ServicioAutenticacion(self.sistema)
 
         self._frame_actual: Optional[tk.Frame] = None
@@ -949,7 +949,7 @@ class AppCriptoCoin(tk.Tk):
             self._frame_actual.destroy()
         self._frame_actual = LoginFrame(self)
 
-    def mostrar_dashboard(self, sesion: SesionCriptoCoin):
+    def mostrar_dashboard(self, sesion: Sesionciphercoin):
         if self._frame_actual:
             self._frame_actual.destroy()
         self._frame_actual = DashboardFrame(self, sesion)
@@ -960,7 +960,7 @@ class AppCriptoCoin(tk.Tk):
 # =========================================================
 
 def main():
-    app = AppCriptoCoin()
+    app = Appciphercoin()
     app.mainloop()
 
 

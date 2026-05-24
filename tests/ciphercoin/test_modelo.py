@@ -162,13 +162,13 @@ class TestBlockchain(unittest.TestCase):
 # TESTS: SistemaCipherCoin — wallets iniciales
 # =========================================================
 
-class TestSistemaCriptoCoinWallets(unittest.TestCase):
+class TestSistemaciphercoinWallets(unittest.TestCase):
 
     def setUp(self):
         # AuditoriaArchivoLog en modo silencioso (fichero /dev/null en Linux/Mac)
         import os
         log_path = os.devnull
-        self.sistema = SistemaCriptoCoin(
+        self.sistema = Sistemaciphercoin(
             auditoria=AuditoriaArchivoLog(log_path)
         )
 
@@ -215,7 +215,7 @@ class TestTransferencias(unittest.TestCase):
 
     def setUp(self):
         import os
-        self.sistema = SistemaCriptoCoin(
+        self.sistema = Sistemaciphercoin(
             auditoria=AuditoriaArchivoLog(os.devnull)
         )
         self.alice_dir    = self.sistema.direccion_por_nombre("Alice (Usuario)")
@@ -324,8 +324,8 @@ class TestAutenticacion(unittest.TestCase):
 
     def setUp(self):
         import os
-        sistema = SistemaCriptoCoin(auditoria=AuditoriaArchivoLog(os.devnull))
-        from criptocoin.autenticacion import ServicioAutenticacion
+        sistema = Sistemaciphercoin(auditoria=AuditoriaArchivoLog(os.devnull))
+        from ciphercoin.autenticacion import ServicioAutenticacion
         self.auth = ServicioAutenticacion(sistema)
 
     def test_login_correcto_alice(self):
@@ -337,29 +337,29 @@ class TestAutenticacion(unittest.TestCase):
         self.assertIsNotNone(sesion)
 
     def test_login_password_incorrecta_lanza_error(self):
-        from criptocoin.autenticacion import ErrorSesionCriptoCoin
-        with self.assertRaises((ErrorSesionCriptoCoin, Exception)):
+        from ciphercoin.autenticacion import ErrorSesionciphercoin
+        with self.assertRaises((ErrorSesionciphercoin, Exception)):
             try:
                 self.auth.login("alice", "wrongpassword")
                 self.fail("Debería haber lanzado una excepción")
-            except ErrorSesionCriptoCoin:
+            except ErrorSesionciphercoin:
                 raise
             except Exception as e:
                 if "Autenticacion" in type(e).__name__ or "autenticacion" in str(e).lower():
-                    raise ErrorSesionCriptoCoin(str(e))
+                    raise ErrorSesionciphercoin(str(e))
                 raise
 
     def test_login_usuario_inexistente_lanza_error(self):
-        from criptocoin.autenticacion import ErrorSesionCriptoCoin
-        with self.assertRaises((ErrorSesionCriptoCoin, Exception)):
+        from ciphercoin.autenticacion import ErrorSesionciphercoin
+        with self.assertRaises((ErrorSesionciphercoin, Exception)):
             try:
                 self.auth.login("noexiste", "cualquier")
                 self.fail("Debería haber lanzado una excepción")
-            except ErrorSesionCriptoCoin:
+            except ErrorSesionciphercoin:
                 raise
             except Exception as e:
                 if "Autenticacion" in type(e).__name__ or "autenticacion" in str(e).lower():
-                    raise ErrorSesionCriptoCoin(str(e))
+                    raise ErrorSesionciphercoin(str(e))
                 raise
 
     def test_logout_limpia_sesion(self):
@@ -374,7 +374,7 @@ class TestAutenticacion(unittest.TestCase):
 
     def test_sesion_estado_tiene_wallet_estado(self):
         sesion = self.auth.login("estado", "Estado#Coin2024!")
-        from criptocoin.modelo import TipoWallet
+        from ciphercoin.modelo import TipoWallet
         self.assertEqual(sesion.wallet.tipo, TipoWallet.ESTADO)
 
 

@@ -1,5 +1,5 @@
 """
-autenticacion.py — Capa de autenticación de CriptoCoin.
+autenticacion.py — Capa de autenticación de ciphercoin.
 
 Integra el GestorCredenciales del proyecto original con el sistema de wallets,
 usando el ProxySeguro como guardián de acceso.
@@ -21,24 +21,24 @@ from gestor_credenciales.proxy_seguro import (
     ErrorAutenticacion,   # viene del proxy_seguro, no del gestor
     ErrorAutorizacion,
 )
-from criptocoin.modelo import SistemaCriptoCoin, TipoWallet, Wallet
+from ciphercoin.modelo import Sistemaciphercoin, TipoWallet, Wallet
 
 
 # =========================================================
-# EXCEPCIÓN DE SESIÓN CRIPTOCOIN
+# EXCEPCIÓN DE SESIÓN ciphercoin
 # =========================================================
 
-class ErrorSesionCriptoCoin(Exception):
-    """Error durante autenticación o sesión en CriptoCoin."""
+class ErrorSesionciphercoin(Exception):
+    """Error durante autenticación o sesión en ciphercoin."""
 
 
 # =========================================================
-# SESIÓN DE USUARIO CRIPTOCOIN
+# SESIÓN DE USUARIO ciphercoin
 # =========================================================
 
-class SesionCriptoCoin:
+class Sesionciphercoin:
     """
-    Encapsula una sesión de usuario autenticada en CriptoCoin.
+    Encapsula una sesión de usuario autenticada en ciphercoin.
 
     Combina la Sesion del ProxySeguro con la dirección de wallet
     del usuario activo, para que la GUI sepa qué wallet mostrar.
@@ -65,7 +65,7 @@ class SesionCriptoCoin:
         return self._wallet.direccion
 
     def __repr__(self) -> str:
-        return f"SesionCriptoCoin(usuario={self.nombre_usuario!r})"
+        return f"Sesionciphercoin(usuario={self.nombre_usuario!r})"
 
 
 # =========================================================
@@ -75,18 +75,18 @@ class SesionCriptoCoin:
 class ServicioAutenticacion:
     """
     Orquesta el GestorCredenciales y el ProxySeguro para
-    proveer login/logout a la GUI de CriptoCoin.
+    proveer login/logout a la GUI de ciphercoin.
 
     Usa el GestorCredenciales como almacén de contraseñas y
     el ProxySeguro como guardián de roles (usuario / pyme / admin).
     """
 
     # Clave maestra interna: solo la conoce el sistema.
-    _CLAVE_MAESTRA = "CriptoCoin#Master2024!"
+    _CLAVE_MAESTRA = "ciphercoin#Master2024!"
     # Nombre del servicio en el gestor de credenciales
-    _SERVICIO = "criptocoin"
+    _SERVICIO = "ciphercoin"
 
-    def __init__(self, sistema: SistemaCriptoCoin):
+    def __init__(self, sistema: Sistemaciphercoin):
         self._sistema = sistema
 
         # GestorCredenciales: almacena las contraseñas
@@ -99,7 +99,7 @@ class ServicioAutenticacion:
         self._usuario_a_wallet: dict[str, str] = {}
 
         # Sesión activa (solo una por instancia de GUI)
-        self._sesion_activa: Optional[SesionCriptoCoin] = None
+        self._sesion_activa: Optional[Sesionciphercoin] = None
 
         # Registrar los 4 wallets predefinidos
         self._registrar_wallets_predefinidos()
@@ -115,7 +115,7 @@ class ServicioAutenticacion:
         """
         wallets_config = [
             # (nombre_usuario, contraseña, rol_proxy, nombre_wallet)
-            ("estado",   "Estado#Coin2024!",  "admin",  "Estado CriptoCoin"),
+            ("estado",   "Estado#Coin2024!",  "admin",  "Estado ciphercoin"),
             ("alice",    "Alice#Coin2024!",    "editor", "Alice (Usuario)"),
             ("bob",      "Bob#Coin2024!",      "editor", "Bob (Usuario)"),
             ("techpyme", "TechPyme#Coin2024!", "editor", "TechPyme S.L."),
@@ -150,11 +150,11 @@ class ServicioAutenticacion:
                        "El nombre de usuario no puede estar vacío")
     @icontract.require(lambda password: isinstance(password, str) and password,
                        "La contraseña no puede estar vacía")
-    def login(self, usuario: str, password: str) -> SesionCriptoCoin:
+    def login(self, usuario: str, password: str) -> Sesionciphercoin:
         """
-        Autentica al usuario y devuelve una SesionCriptoCoin.
+        Autentica al usuario y devuelve una Sesionciphercoin.
 
-        Lanza ErrorSesionCriptoCoin si las credenciales son incorrectas.
+        Lanza ErrorSesionciphercoin si las credenciales son incorrectas.
         """
         usuario = usuario.strip()
         try:
@@ -163,17 +163,17 @@ class ServicioAutenticacion:
             # Capturamos tanto ErrorAutenticacion del proxy como cualquier
             # excepción de autenticación del GestorCredenciales
             if "ErrorAutenticacion" in type(e).__name__ or isinstance(e, ErrorAutenticacion):
-                raise ErrorSesionCriptoCoin("Usuario o contraseña incorrectos.")
-            raise ErrorSesionCriptoCoin("Usuario o contraseña incorrectos.")
+                raise ErrorSesionciphercoin("Usuario o contraseña incorrectos.")
+            raise ErrorSesionciphercoin("Usuario o contraseña incorrectos.")
 
         wallet_dir = self._usuario_a_wallet.get(usuario)
         if not wallet_dir:
-            raise ErrorSesionCriptoCoin(
+            raise ErrorSesionciphercoin(
                 f"No se encontró wallet para el usuario {usuario!r}"
             )
 
         wallet = self._sistema.obtener_wallet(wallet_dir)
-        self._sesion_activa = SesionCriptoCoin(sesion_proxy, wallet)
+        self._sesion_activa = Sesionciphercoin(sesion_proxy, wallet)
         return self._sesion_activa
 
     def logout(self) -> None:
@@ -181,7 +181,7 @@ class ServicioAutenticacion:
         self._sesion_activa = None
 
     @property
-    def sesion_activa(self) -> Optional[SesionCriptoCoin]:
+    def sesion_activa(self) -> Optional[Sesionciphercoin]:
         return self._sesion_activa
 
     def esta_autenticado(self) -> bool:

@@ -1,4 +1,4 @@
-2026-05-22T22:40:37.228594+00:00 | WALLET_CREADA | Estado CriptoCoin | tipo=estado | dir=8cdf3d44d64fbb385fa7b5ef5915776e2ca155cf
+2026-05-22T22:40:37.228594+00:00 | WALLET_CREADA | Estado ciphercoin | tipo=estado | dir=8cdf3d44d64fbb385fa7b5ef5915776e2ca155cf
 2026-05-22T22:40:37.228676+00:00 | WALLET_CREADA | Alice (Usuario) | tipo=usuario | dir=75f14af88ab1bf81a5d86aa61c44ad1ba1237b49
 2026-05-22T22:40:37.228696+00:00 | WALLET_CREADA | Bob (Usuario) | tipo=usuario | dir=d769e11af11e73799bcb092346b10c119e3ddd19
 2026-05-22T22:40:37.228708+00:00 | WALLET_CREADA | TechPyme S.L. | tipo=pyme | dir=5853f3e1f663e5bba85bae6f770b9844d815dbb6

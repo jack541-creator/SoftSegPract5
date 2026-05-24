@@ -1,11 +1,11 @@
 """
-main.py — Punto de entrada de CriptoCoin.
+main.py — Punto de entrada de ciphercoin.
 
 Ejecutar directamente:
     python main.py
 
 O bien, tras instalar el paquete:
-    criptocoin
+    ciphercoin
 """
 
 import sys
@@ -16,7 +16,7 @@ _SRC = os.path.join(os.path.dirname(__file__), "src")
 if _SRC not in sys.path:
     sys.path.insert(0, _SRC)
 
-from criptocoin.gui import main
+from ciphercoin.gui import main
 
 if __name__ == "__main__":
     main()

@@ -30,7 +30,7 @@ class ErrorAccesoNoAutorizado(Exception):
 # =========================================================
 
 class TipoWallet(str, Enum):
-    """Tipo de wallet dentro del ecosistema CriptoCoin."""
+    """Tipo de wallet dentro del ecosistema ciphercoin."""
     ESTADO  = "estado"
     USUARIO = "usuario"
     PYME    = "pyme"
@@ -181,7 +181,7 @@ class ServicioAuditoriaCripto(ABC):
 class AuditoriaArchivoLog(ServicioAuditoriaCripto):
     """Implementación que escribe en un archivo de texto plano."""
 
-    def __init__(self, ruta: str = "criptocoin_audit.log"):
+    def __init__(self, ruta: str = "ciphercoin_audit.log"):
         self._ruta = ruta
 
     def registrar(self, accion: str, detalle: str) -> None:
@@ -229,10 +229,10 @@ class Blockchain:
 
 
 # =========================================================
-# SISTEMA CRIPTOCOIN (Facade)
+# SISTEMA ciphercoin (Facade)
 # =========================================================
 
-class SistemaCriptoCoin:
+class Sistemaciphercoin:
     """
     Fachada principal del sistema de criptomoneda.
 
@@ -241,7 +241,7 @@ class SistemaCriptoCoin:
     """
 
     # clave maestra interna del sistema (solo para operaciones de estado)
-    _CLAVE_SISTEMA = "CriptoCoinSistema#2026!"
+    _CLAVE_SISTEMA = "ciphercoinSistema#2026!"
 
     def __init__(
         self,
@@ -268,7 +268,7 @@ class SistemaCriptoCoin:
     def _inicializar_wallets(self) -> None:
         """Crea los cuatro wallets del ecosistema con fondos iniciales."""
         definiciones = [
-            ("Estado CriptoCoin",  TipoWallet.ESTADO,  10_000.0),
+            ("Estado ciphercoin",  TipoWallet.ESTADO,  10_000.0),
             ("Alice (Usuario)",    TipoWallet.USUARIO,  1_000.0),
             ("Bob (Usuario)",      TipoWallet.USUARIO,  1_000.0),
             ("TechPyme S.L.",      TipoWallet.PYME,     5_000.0),
