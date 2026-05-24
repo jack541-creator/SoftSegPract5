@@ -11,25 +11,17 @@ Sistema de criptomoneda con interfaz gráfica, gestor de credenciales integrado,
 - `icontract >= 2.6`
 - `bcrypt >= 4.0`
 
----
-
-## Instalación
-
-### Opción A — ejecución directa (recomendada para desarrollo)
-
+Dependecnias
 ```bash
-# 1. Instalar dependencias
 pip install icontract bcrypt
-
-# 2. Lanzar la aplicación
-python main.py
 ```
 
-### Opción B — instalar como paquete
+---
 
-```bash
-pip install -e .
-ciphercoin
+## Ejecución
+
+# Lanzar la aplicación
+python main.py
 ```
 
 ---
