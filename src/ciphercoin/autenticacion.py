@@ -10,12 +10,12 @@ from __future__ import annotations
 import icontract
 from typing import Optional
 
-from gestor_credenciales.gestor_credenciales import (
+from src.gestor_credenciales.gestor_credenciales import (
     GestorCredenciales,
     ErrorCredencialExistente,
     ErrorPoliticaPassword,
 )
-from gestor_credenciales.proxy_seguro import (
+from src.gestor_credenciales.proxy_seguro import (
     ProxySeguroGestorCredenciales,
     Sesion,
     ErrorAutenticacion,   # viene del proxy_seguro, no del gestor
