@@ -18,8 +18,8 @@ from tkinter import ttk, messagebox
 from typing import Optional
 import threading
 
-from ciphercoin.modelo import (
-    Sistemaciphercoin,
+from src.ciphercoin.modelo import (
+    SistemaCipherCoin,
     TipoWallet,
     ErrorSaldoInsuficiente,
     ErrorWalletNoEncontrada,
@@ -924,7 +924,7 @@ class Appciphercoin(tk.Tk):
     """
     Ventana raíz de la aplicación ciphercoin.
 
-    Instancia el Sistemaciphercoin y el ServicioAutenticacion
+    Instancia el SistemaCipherCoin y el ServicioAutenticacion
     y gestiona la navegación entre pantallas.
     """
 
@@ -936,7 +936,7 @@ class Appciphercoin(tk.Tk):
         self.minsize(760, 560)
 
         # modelo de dominio
-        self.sistema = Sistemaciphercoin()
+        self.sistema = SistemaCipherCoin()
         self.auth    = ServicioAutenticacion(self.sistema)
 
         self._frame_actual: Optional[tk.Frame] = None

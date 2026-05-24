@@ -21,7 +21,7 @@ from gestor_credenciales.proxy_seguro import (
     ErrorAutenticacion,   # viene del proxy_seguro, no del gestor
     ErrorAutorizacion,
 )
-from ciphercoin.modelo import Sistemaciphercoin, TipoWallet, Wallet
+from src.ciphercoin.modelo import SistemaCipherCoin, TipoWallet, Wallet
 
 
 # =========================================================
@@ -86,7 +86,7 @@ class ServicioAutenticacion:
     # Nombre del servicio en el gestor de credenciales
     _SERVICIO = "ciphercoin"
 
-    def __init__(self, sistema: Sistemaciphercoin):
+    def __init__(self, sistema: SistemaCipherCoin):
         self._sistema = sistema
 
         # GestorCredenciales: almacena las contraseñas

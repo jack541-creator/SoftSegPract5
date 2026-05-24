@@ -232,7 +232,7 @@ class Blockchain:
 # SISTEMA ciphercoin (Facade)
 # =========================================================
 
-class Sistemaciphercoin:
+class SistemaCipherCoin:
     """
     Fachada principal del sistema de criptomoneda.
 

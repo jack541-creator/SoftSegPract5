@@ -1,6 +1,6 @@
 import unittest
 
-from ciphercoin.modelo import (
+from src.ciphercoin.modelo import (
     SistemaCipherCoin,
     ComisionPorIntervalos,
     TipoWallet,
@@ -162,13 +162,13 @@ class TestBlockchain(unittest.TestCase):
 # TESTS: SistemaCipherCoin — wallets iniciales
 # =========================================================
 
-class TestSistemaciphercoinWallets(unittest.TestCase):
+class TestSistemaCipherCoinWallets(unittest.TestCase):
 
     def setUp(self):
         # AuditoriaArchivoLog en modo silencioso (fichero /dev/null en Linux/Mac)
         import os
         log_path = os.devnull
-        self.sistema = Sistemaciphercoin(
+        self.sistema = SistemaCipherCoin(
             auditoria=AuditoriaArchivoLog(log_path)
         )
 
@@ -215,7 +215,7 @@ class TestTransferencias(unittest.TestCase):
 
     def setUp(self):
         import os
-        self.sistema = Sistemaciphercoin(
+        self.sistema = SistemaCipherCoin(
             auditoria=AuditoriaArchivoLog(os.devnull)
         )
         self.alice_dir    = self.sistema.direccion_por_nombre("Alice (Usuario)")
@@ -324,8 +324,8 @@ class TestAutenticacion(unittest.TestCase):
 
     def setUp(self):
         import os
-        sistema = Sistemaciphercoin(auditoria=AuditoriaArchivoLog(os.devnull))
-        from ciphercoin.autenticacion import ServicioAutenticacion
+        sistema = SistemaCipherCoin(auditoria=AuditoriaArchivoLog(os.devnull))
+        from src.ciphercoin.autenticacion import ServicioAutenticacion
         self.auth = ServicioAutenticacion(sistema)
 
     def test_login_correcto_alice(self):
@@ -337,7 +337,7 @@ class TestAutenticacion(unittest.TestCase):
         self.assertIsNotNone(sesion)
 
     def test_login_password_incorrecta_lanza_error(self):
-        from ciphercoin.autenticacion import ErrorSesionciphercoin
+        from src.ciphercoin.autenticacion import ErrorSesionciphercoin
         with self.assertRaises((ErrorSesionciphercoin, Exception)):
             try:
                 self.auth.login("alice", "wrongpassword")
@@ -350,7 +350,7 @@ class TestAutenticacion(unittest.TestCase):
                 raise
 
     def test_login_usuario_inexistente_lanza_error(self):
-        from ciphercoin.autenticacion import ErrorSesionciphercoin
+        from src.ciphercoin.autenticacion import ErrorSesionciphercoin
         with self.assertRaises((ErrorSesionciphercoin, Exception)):
             try:
                 self.auth.login("noexiste", "cualquier")
@@ -374,7 +374,7 @@ class TestAutenticacion(unittest.TestCase):
 
     def test_sesion_estado_tiene_wallet_estado(self):
         sesion = self.auth.login("estado", "Estado#Coin2024!")
-        from ciphercoin.modelo import TipoWallet
+        from src.ciphercoin.modelo import TipoWallet
         self.assertEqual(sesion.wallet.tipo, TipoWallet.ESTADO)
 
 

@@ -108,7 +108,7 @@ python -m unittest discover -s tests -v
 | Patrón         | Dónde                                          |
 |----------------|------------------------------------------------|
 | Strategy       | `EstrategiaComision` / `ComisionPorIntervalos` |
-| Facade         | `Sistemaciphercoin`                            |
+| Facade         | `SistemaCipherCoin`                            |
 | Proxy          | `ProxySeguroGestorCredenciales` (original)     |
 | Factory Method | `Wallet.generar_direccion`                     |
 | Observer (log) | `ServicioAuditoriaCripto`                      |
