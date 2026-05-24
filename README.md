@@ -21,6 +21,7 @@ pip install icontract bcrypt
 ## Ejecución
 
 # Lanzar la aplicación
+```bash
 python main.py
 ```
 
