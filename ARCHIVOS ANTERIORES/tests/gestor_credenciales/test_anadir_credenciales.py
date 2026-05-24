@@ -17,7 +17,7 @@ class TestAnadirCredenciales(unittest.TestCase):
         resultado = self.gestor.anadir_credencial(
             servicio="GitHub",
             usuario="user1",
-            contraseña="Password123!",
+            password="Password123!",
             clave_maestra="1234"
         )
 
@@ -29,7 +29,7 @@ class TestAnadirCredenciales(unittest.TestCase):
             self.gestor.anadir_credencial(
                 servicio="GitHub",
                 usuario="user1",
-                contraseña="Password123!",
+                password="Password123!",
                 clave_maestra="wrong"
             )
 
@@ -39,7 +39,7 @@ class TestAnadirCredenciales(unittest.TestCase):
             self.gestor.anadir_credencial(
                 servicio="",
                 usuario="user1",
-                contraseña="Password123!",
+                password="Password123!",
                 clave_maestra="1234"
             )
 
@@ -49,7 +49,7 @@ class TestAnadirCredenciales(unittest.TestCase):
             self.gestor.anadir_credencial(
                 servicio="GitHub",
                 usuario="",
-                contraseña="Password123!",
+                password="Password123!",
                 clave_maestra="1234"
             )
 
@@ -61,7 +61,7 @@ class TestAnadirCredenciales(unittest.TestCase):
             self.gestor.anadir_credencial(
                 servicio="GitHub",
                 usuario=usuario_largo,
-                contraseña="Password123!",
+                password="Password123!",
                 clave_maestra="1234"
             )
 
@@ -72,7 +72,7 @@ class TestAnadirCredenciales(unittest.TestCase):
         resultado = self.gestor.anadir_credencial(
             servicio="GitHub",
             usuario=usuario_max,
-            contraseña="Password123!",
+            password="Password123!",
             clave_maestra="1234"
         )
 
@@ -83,7 +83,7 @@ class TestAnadirCredenciales(unittest.TestCase):
         resultado = self.gestor.anadir_credencial(
             servicio="GitHub",
             usuario="u",
-            contraseña="Password123!",
+            password="Password123!",
             clave_maestra="1234"
         )
 
@@ -95,7 +95,7 @@ class TestAnadirCredenciales(unittest.TestCase):
             self.gestor.anadir_credencial(
                 servicio="GitHub",
                 usuario="   ",
-                contraseña="Password123!",
+                password="Password123!",
                 clave_maestra="1234"
             )
 
@@ -105,7 +105,7 @@ class TestAnadirCredenciales(unittest.TestCase):
             self.gestor.anadir_credencial(
                 servicio="GitHub",
                 usuario="user<>",
-                contraseña="Password123!",
+                password="Password123!",
                 clave_maestra="1234"
             )
 
@@ -114,7 +114,7 @@ class TestAnadirCredenciales(unittest.TestCase):
         resultado = self.gestor.anadir_credencial(
             servicio="GitHub",
             usuario="user_name-123",
-            contraseña="Password123!",
+            password="Password123!",
             clave_maestra="1234"
         )
 
@@ -126,7 +126,7 @@ class TestAnadirCredenciales(unittest.TestCase):
             self.gestor.anadir_credencial(
                 servicio="GitHub",
                 usuario=None,
-                contraseña="Password123!",
+                password="Password123!",
                 clave_maestra="1234"
             )
 
@@ -136,7 +136,7 @@ class TestAnadirCredenciales(unittest.TestCase):
             self.gestor.anadir_credencial(
                 servicio="GitHub",
                 usuario=12345,
-                contraseña="Password123!",
+                password="Password123!",
                 clave_maestra="1234"
             )
 
@@ -146,7 +146,7 @@ class TestAnadirCredenciales(unittest.TestCase):
             self.gestor.anadir_credencial(
                 servicio="GitHub",
                 usuario=["user"],
-                contraseña="Password123!",
+                password="Password123!",
                 clave_maestra="1234"
             )
 
@@ -156,7 +156,7 @@ class TestAnadirCredenciales(unittest.TestCase):
             self.gestor.anadir_credencial(
                 servicio="GitHub; DROP TABLE",
                 usuario="user1",
-                contraseña="Password123!",
+                password="Password123!",
                 clave_maestra="1234"
             )
 
@@ -166,7 +166,7 @@ class TestAnadirCredenciales(unittest.TestCase):
             self.gestor.anadir_credencial(
                 servicio="GitHub",
                 usuario="<script>alert(1)</script>",
-                contraseña="Password123!",
+                password="Password123!",
                 clave_maestra="1234"
             )
 
@@ -175,7 +175,7 @@ class TestAnadirCredenciales(unittest.TestCase):
         self.gestor.anadir_credencial(
             servicio="GitHub",
             usuario="user1",
-            contraseña="Password123!",
+            password="Password123!",
             clave_maestra="1234"
         )
 
@@ -183,7 +183,7 @@ class TestAnadirCredenciales(unittest.TestCase):
             self.gestor.anadir_credencial(
                 servicio="GitHub",
                 usuario="user1",
-                contraseña="Password123!",
+                password="Password123!",
                 clave_maestra="1234"
             )
 

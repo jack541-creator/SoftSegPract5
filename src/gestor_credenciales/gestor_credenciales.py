@@ -248,10 +248,7 @@ class GestorCredenciales:
     # =====================================================
     # anadir credencial
     # =====================================================
-    def anadir_credencial(self, clave_maestra, servicio, usuario, password, contraseña):
-        if password is None:
-            password = contraseña
-
+    def anadir_credencial(self, clave_maestra, servicio, usuario, password):
         simbolos = "!>;'\\/[]{}:\n\r|&"
         palabras_peligrosas = ["DROP", "DELETE", "UPDATE", "ALTER", "CREATE",
                                 "TABLE", "ALERT", "SCRIPT", "EXECUTE", "IMMEDIATE",]
