@@ -85,12 +85,9 @@ La comisión mínima es siempre **0 %** (nunca negativa).
 
 ## Ejecutar los tests
 
+Desde la raíz del proyecto
 ```bash
-# Desde la raíz del proyecto
 python -m pytest
-
-# O con unittest directamente
-python -m unittest discover -s tests -v
 ```
 
 ---
