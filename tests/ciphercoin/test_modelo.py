@@ -339,28 +339,13 @@ class TestAutenticacion(unittest.TestCase):
     def test_login_password_incorrecta_lanza_error(self):
         from src.ciphercoin.autenticacion import ErrorSesionciphercoin
         with self.assertRaises((ErrorSesionciphercoin, Exception)):
-            try:
                 self.auth.login("alice", "wrongpassword")
-                self.fail("Debería haber lanzado una excepción")
-            except ErrorSesionciphercoin:
-                raise
-            except Exception as e:
-                if "Autenticacion" in type(e).__name__ or "autenticacion" in str(e).lower():
-                    raise ErrorSesionciphercoin(str(e))
-                raise
 
     def test_login_usuario_inexistente_lanza_error(self):
         from src.ciphercoin.autenticacion import ErrorSesionciphercoin
         with self.assertRaises((ErrorSesionciphercoin, Exception)):
-            try:
                 self.auth.login("noexiste", "cualquier")
-                self.fail("Debería haber lanzado una excepción")
-            except ErrorSesionciphercoin:
-                raise
-            except Exception as e:
-                if "Autenticacion" in type(e).__name__ or "autenticacion" in str(e).lower():
-                    raise ErrorSesionciphercoin(str(e))
-                raise
+
 
     def test_logout_limpia_sesion(self):
         self.auth.login("bob", "Bob#Coin2024!")
