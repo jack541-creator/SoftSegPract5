@@ -1,6 +1,4 @@
 """
-autenticacion.py — Capa de autenticación de ciphercoin.
-
 Integra el GestorCredenciales del proyecto original con el sistema de wallets,
 usando el ProxySeguro como guardián de acceso.
 """
@@ -90,7 +88,7 @@ class ServicioAutenticacion:
         self._sistema = sistema
 
         # GestorCredenciales: almacena las contraseñas
-        self._gestor = GestorCredenciales(clave_maestra=self._CLAVE_MAESTRA)
+        self._gestor = GestorCredenciales(clave_maestra=self._CLAVE_MAESTRA, log_file="ciphercoin_audit.log")
 
         # ProxySeguro: controla el acceso por rol
         self._proxy = ProxySeguroGestorCredenciales(self._gestor)
@@ -105,7 +103,7 @@ class ServicioAutenticacion:
         self._registrar_wallets_predefinidos()
 
     # ------------------------------------------------------------------
-    # Inicialización
+    #  Inicialización
     # ------------------------------------------------------------------
 
     def _registrar_wallets_predefinidos(self) -> None:
@@ -143,7 +141,7 @@ class ServicioAutenticacion:
             self._usuario_a_wallet[usuario] = wallet_dir
 
     # ------------------------------------------------------------------
-    # Login / Logout
+    #  Login / Logout
     # ------------------------------------------------------------------
 
     @icontract.require(lambda usuario: isinstance(usuario, str) and usuario.strip(),
@@ -188,7 +186,7 @@ class ServicioAutenticacion:
         return self._sesion_activa is not None
 
     # ------------------------------------------------------------------
-    # Credenciales de demo (para la pantalla de login)
+    #  Credenciales de demo (para la pantalla de login)
     # ------------------------------------------------------------------
 
     @staticmethod
@@ -198,5 +196,4 @@ class ServicioAutenticacion:
             {"usuario": "alice",    "password": "Alice#Coin2024!",    "rol": "Usuario"},
             {"usuario": "bob",      "password": "Bob#Coin2024!",      "rol": "Usuario"},
             {"usuario": "techpyme", "password": "TechPyme#Coin2024!", "rol": "PYME"},
-            {"usuario": "estado",   "password": "Estado#Coin2024!",   "rol": "Admin"},
-        ]
+            {"usuario": "estado",   "password": "Estado#Coin2024!",   "rol": "Admin"},   ]

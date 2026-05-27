@@ -175,16 +175,11 @@ class TestVerificarFortalezaPassword(unittest.TestCase):
             def verificar_fortaleza(self, password: str) -> str:
                 return "débil"
 
-        gestor = GestorCredenciales(
-            "MasterPass1!",
-            politica_password=PoliticaSiempreDebil(),
-        )
+        gestor = GestorCredenciales("MasterPass1!", politica_password=PoliticaSiempreDebil(),)
         # Aunque la contraseña sería "fuerte" con la política por defecto,
         # la política inyectada siempre devuelve "débil" → debe rechazarla
         with self.assertRaises(ErrorPoliticaPassword):
-            gestor.anadir_credencial(
-                "MasterPass1!", "gmail", "usuario", "m!Clave#99"
-            )
+            gestor.anadir_credencial("MasterPass1!", "gmail", "usuario", "m!Clave#99")
 
 
 if __name__ == "__main__":

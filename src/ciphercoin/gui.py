@@ -15,31 +15,32 @@ from typing import Optional
 import threading
 from src.ciphercoin.modelo import (SistemaCipherCoin,TipoWallet,ErrorSaldoInsuficiente,ErrorWalletNoEncontrada,ErrorTransaccionInvalida)
 from ciphercoin.autenticacion import (ServicioAutenticacion,Sesionciphercoin,ErrorSesionciphercoin)
+from src.logger.access_control import ContextoSeguridad, RolUsuario
 
 
 #Paleta de Colores y Estilos de fuente  =============================================================
 
 COLORES = {
-    "fondo":          "#FFFFEC",   
-    "fondo_2":        "#F7F9D8",   
-    "fondo_card":     "#FFFFEC",   
-    "fondo_card_2":   "#F3F6C9",   
-    "fondo_input":    "#FFFFEC",   
-    "acento":         "#CBD83B",   
-    "acento_hover":   "#B7C42F",   
-    "acento_soft":    "#EEF3A8",   
-    "violeta":        "#A88AED",   
-    "violeta_soft":   "#C9B8F5",   
-    "texto":          "#3B315E",   
-    "texto_suave":    "#8E7EBC",   
-    "texto_invertido": "#FFFFFF",
-    "exito":          "#CBD83B",   
-    "error":          "#D85C7A",
-    "advertencia":    "#A88AED",   
-    "estado":         "#A88AED",  
-    "pyme":           "#CBD83B",   
-    "usuario":        "#A88AED",   
-    "linea":          "#E6DDFB",   
+    "fondo":           "#FFFCEC", 
+    "fondo_2":         "#F9F3D8", 
+    "fondo_card":      "#FFFCEC", 
+    "fondo_card_2":    "#F3F6C9", 
+    "fondo_input":     "#FFFCEC", 
+    "acento":          "#7EBA45", 
+    "acento_hover":    "#B7C42F", 
+    "acento_soft":     "#EEF3A8", 
+    "violeta":         "#A88AED", 
+    "violeta_soft":    "#C9B8F5", 
+    "texto":           "#3B315E", 
+    "texto_suave":     "#8E7EBC", 
+    "texto_invertido": "#FFFFFF", 
+    "exito":           "#8ABB5C", 
+    "error":           "#D85C7A",
+    "advertencia":     "#A88AED", 
+    "estado":          "#A88AED", 
+    "pyme":            "#7EBA45", 
+    "usuario":         "#A88AED", 
+    "linea":           "#E6DDFB", 
 }
 
 FUENTE_TITULO  = ("Segoe UI", 22, "bold")
@@ -150,8 +151,8 @@ class LoginFrame(tk.Frame):
         self.pack(fill="both", expand=True)
 
         # ── Logo / título ──────────────────────────────────────────
-        tk.Label(self,text="✦ CipherCoin",bg=COLORES["fondo"],fg=COLORES["violeta"],font=("Segoe UI", 34, "bold")).pack(pady=(50, 4))
-        tk.Label(self,text="Wallet seguro",bg=COLORES["fondo"],fg=COLORES["texto_suave"],font=FUENTE_NORMAL).pack(pady=(0, 30))
+        tk.Label(self,text="✦ CipherCoin",bg=COLORES["fondo"],fg=COLORES["violeta"],font=("Segoe UI", 34, "bold")).pack(pady=(40, 4))
+        tk.Label(self,text="Ofrecemos Wallets seguros impulsando pymes", bg=COLORES["fondo"],fg=COLORES["texto_suave"],font=FUENTE_NORMAL).pack(pady=(0, 20))
 
         # ── card de login ──────────────────────────────────────────
         card = Card(self)
@@ -175,21 +176,22 @@ class LoginFrame(tk.Frame):
         tk.Label(demo_frame,text="Credenciales de demo",bg=COLORES["fondo"],fg=COLORES["texto_suave"],font=FUENTE_PEQUEÑA).pack(anchor="w", pady=(0, 6))
 
         for cred in ServicioAutenticacion.credenciales_demo():
-            fila = tk.Frame(demo_frame, bg=COLORES["fondo"])
+            fila = tk.Frame(demo_frame, bg=COLORES["fondo"], height=32)
             fila.pack(fill="x", pady=2)
             color = COLORES["pyme"] if cred["rol"] == "PYME" else (COLORES["estado"] if cred["rol"] == "Admin" else COLORES["usuario"])
             
-            tk.Label(fila,text=f"[{cred['rol']}]",bg=COLORES["fondo"],fg=color,font=FUENTE_PEQUEÑA,width=9,anchor="w").pack(side="left")
-            tk.Label(fila,text=f"  {cred['usuario']}",bg=COLORES["fondo"],fg=COLORES["texto"],font=FUENTE_MONO,width=12,anchor="w").pack(side="left")
-            tk.Label(fila,text=f"  {cred['password']}",bg=COLORES["fondo"],fg=COLORES["texto_suave"],font=FUENTE_MONO).pack(side="left")
+            tk.Label(fila, text=f"[{cred['rol']}]", bg=COLORES["fondo"], fg=color, 
+             font=FUENTE_PEQUEÑA, width=10, anchor="w").pack(side="left")
             
-            # Botón para autocompletar -------------------------------------------------
-            tk.Button(fila,text="↑",bg=COLORES["fondo_input"],fg=COLORES["texto"],relief="flat",cursor="hand2",
-                command=lambda u=cred["usuario"], p=cred["password"]: (
-                    self._campo_usuario.var.set(u),
-                    self._campo_password.var.set(p),
-                ),
-            ).pack(side="left", padx=(6, 0))
+            tk.Label(fila, text=f"  {cred['usuario']}", bg=COLORES["fondo"], fg=COLORES["texto"], 
+             font=FUENTE_MONO, width=14, anchor="w").pack(side="left")
+            
+            tk.Label(fila, text=f"  {cred['password']}", bg=COLORES["fondo"], fg=COLORES["texto_suave"], 
+             font=FUENTE_MONO, width=18, anchor="w").pack(side="left")
+            
+            btn = tk.Button(fila, text="↑", bg=COLORES["fondo_input"], fg=COLORES["texto"], relief="flat", cursor="hand2", width=3, height=1,
+                    command=lambda u=cred["usuario"], p=cred["password"]: (self._campo_usuario.var.set(u), self._campo_password.var.set(p),))
+            btn.pack(side="left", padx=(6, 0))
 
         # si le damos Enter ejcuta "Entrar" -----------
         self._app.bind("<Return>", lambda e: self._login())
@@ -279,7 +281,7 @@ class DashboardFrame(tk.Frame):
             tk.Label(fila,text=f"  {w.nombre}",bg=COLORES["fondo_card"],fg=COLORES["texto"],font=FUENTE_PEQUEÑA).pack(side="left")
             tk.Label(fila,text=f"  {w.saldo:.2f} ₿",bg=COLORES["fondo_card"],fg=COLORES["texto_suave"],font=FUENTE_PEQUEÑA).pack(side="right")
 
-    #botones de acción ────────────────────────────
+    # botones de acción ────────────────────────────
     def _construir_acciones(self, parent):
         card = Card(parent)
         card.pack(fill="x", pady=(0, 12))
@@ -294,11 +296,11 @@ class DashboardFrame(tk.Frame):
         if self._sesion.wallet.tipo == TipoWallet.ESTADO:
             Boton(botones, "🛡 Panel Admin", self._abrir_admin,color=COLORES["estado"]).pack(side="left")
 
-    #historial rápido (últimas 5) ─────────────────────────────
+    # historial rápido (últimas 5) ─────────────────────────────
     def _construir_historial_rapido(self, parent):
         self._frame_historial = Card(parent)
         self._frame_historial.pack(fill="both", expand=True)
-        tk.Label(self._frame_historial,text="Últimas transacciones",bg=COLORES["fondo_card"],fg=COLORES["texto"],font=FUENTE_GRANDE).pack(anchor="w", pady=(0, 8))
+        tk.Label(self._frame_historial,text="Últimas transacciones", bg=COLORES["fondo_card"],fg=COLORES["texto"],font=FUENTE_GRANDE).pack(anchor="w", pady=(0, 8))
 
         self._tabla_rapida = ttk.Treeview(self._frame_historial,columns=("tipo", "contraparte", "importe", "comision", "fecha"),show="headings",height=7)
         aplicar_estilo_ttk()
@@ -308,8 +310,7 @@ class DashboardFrame(tk.Frame):
             ("contraparte", 160, "Contraparte"),
             ("importe",     90,  "Importe ₿"),
             ("comision",    80,  "Comisión"),
-            ("fecha",       150, "Fecha"),
-        ]:
+            ("fecha",       150, "Fecha"),]:
             self._tabla_rapida.heading(col, text=encab)
             self._tabla_rapida.column(col, width=ancho, anchor="center")
 
@@ -364,7 +365,7 @@ class VentanaTransferencia(tk.Toplevel):
         self.title("Nueva transferencia — ciphercoin")
         self.configure(bg=COLORES["fondo"])
         self.resizable(False, False)
-        self.grab_set()
+        # si pones el grab aquí no funciona bieen
         self._app       = master
         self._sesion    = sesion
         self._dashboard = dashboard
@@ -372,10 +373,16 @@ class VentanaTransferencia(tk.Toplevel):
         #wallets destino disponibles ─────────────────────────────────
         self._wallets_destino = [
             w for w in master.sistema.listar_wallets()
-            if w.direccion != sesion.wallet.direccion
-        ]
+            if w.direccion != sesion.wallet.direccion ]
         self._construir()
         self._centrar()
+        
+        # ahora sí
+        self.after(10, self._grab_and_center)
+        
+    def _grab_and_center(self):
+        """se ejecuta después de que la ventana es visible"""
+        self.grab_set()
 
     def _construir(self):
         card = Card(self)
@@ -486,11 +493,17 @@ class VentanaHistorial(tk.Toplevel):
         super().__init__(master)
         self.title("Historial de transacciones — ciphercoin")
         self.configure(bg=COLORES["fondo"])
-        self.grab_set()
+        # lo mismo, el grab
         self._app    = master
         self._sesion = sesion
         self._construir()
         self.geometry("820x480")
+        
+        # va cuando la ventana ya está construida
+        self.after(10, self._grab_and_center)
+        
+    def _grab_and_center(self):
+        self.grab_set()
 
     def _construir(self):
         card = Card(self)
@@ -538,10 +551,16 @@ class VentanaAdmin(tk.Toplevel):
         super().__init__(master)
         self.title("Panel de administración — ciphercoin")
         self.configure(bg=COLORES["fondo"])
-        self.grab_set()
+        # el graaaaab
         self._app = master
         self._construir()
         self.geometry("700x520")
+        
+        # aquiiiiii
+        self.after(10, self._grab_and_center)
+        
+    def _grab_and_center(self):
+        self.grab_set()
 
     def _construir(self):
         card = Card(self)
@@ -561,8 +580,7 @@ class VentanaAdmin(tk.Toplevel):
             ("nombre",     200, "Wallet"),
             ("tipo",       100, "Tipo"),
             ("saldo",      120, "Saldo ₿"),
-            ("reputacion",  90, "Reputación"),
-        ]:
+            ("reputacion",  90, "Reputación"), ]:
             tabla.heading(col, text=enc)
             tabla.column(col, width=ancho, anchor="center")
 
@@ -609,6 +627,10 @@ class Appciphercoin(tk.Tk):
 
     def __init__(self):
         super().__init__()
+        
+        # te he tenido que poner esto cuando implementé los decoradores
+        ContextoSeguridad().iniciar_sesion("sistema", RolUsuario.ADMIN)
+        
         self.title("ciphercoin — Sistema de Criptomoneda")
         self.configure(bg=COLORES["fondo"])
         aplicar_estilo_ttk()
@@ -618,8 +640,15 @@ class Appciphercoin(tk.Tk):
         self.auth    = ServicioAutenticacion(self.sistema)
         self._frame_actual: Optional[tk.Frame] = None
         self.mostrar_login()
+        
+    def __del__(self):
+        # y esto para cerrar sesión al cerrar la aplicación
+        try:
+            ContextoSeguridad().cerrar_sesion()
+        except:
+            pass
 
-    #navegación ────────────────────────
+    # navegación ────────────────────────
     def mostrar_login(self):
         if self._frame_actual:
             self._frame_actual.destroy()

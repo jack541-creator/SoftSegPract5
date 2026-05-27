@@ -8,9 +8,8 @@ from enum import Enum
 from typing import Optional
 import icontract
 
-
 # =========================================================
-# EXCEPCIONES DE DOMINIO
+# EXCEPCIONES
 # =========================================================
 
 class ErrorSaldoInsuficiente(Exception):
@@ -92,7 +91,7 @@ class ComisionProgresiva(EstrategiaComision):
 
 
 # =========================================================
-# WALLET
+#  WALLET
 # =========================================================
 
 @dataclass
@@ -105,7 +104,7 @@ class Wallet:
     reputacion: int   = 0
 
     # ------------------------------------------------------------------
-    # Fábrica de dirección determinista
+    # fábrica de dirección determinista
     # ------------------------------------------------------------------
 
     @staticmethod
@@ -115,18 +114,16 @@ class Wallet:
         return hashlib.sha256(raw).hexdigest()[:40]
 
     # ------------------------------------------------------------------
-    # Repr
+    #  Repr
     # ------------------------------------------------------------------
 
     def __repr__(self) -> str:
         return (
-            f"Wallet({self.nombre!r}, tipo={self.tipo.value}, "
-            f"saldo={self.saldo:.4f}, rep={self.reputacion})"
-        )
-
+                 f"Wallet({self.nombre!r}, tipo={self.tipo.value}, "
+                 f"saldo={self.saldo:.4f}, rep={self.reputacion})" )
 
 # =========================================================
-# TRANSACCIÓN
+#  TRANSACCIÓN
 # =========================================================
 
 @dataclass
@@ -164,7 +161,7 @@ class Transaccion:
 
 
 # =========================================================
-# AUDITORÍA
+#  AUDITORÍA
 # =========================================================
 
 class ServicioAuditoriaCripto(ABC):
@@ -188,7 +185,7 @@ class AuditoriaArchivoLog(ServicioAuditoriaCripto):
 
 
 # =========================================================
-# BLOCKCHAIN (registro de transacciones)
+#  BLOCKCHAIN (registro de transacciones) (R)
 # =========================================================
 
 class Blockchain:
@@ -197,26 +194,24 @@ class Blockchain:
         self._bloques: list[dict] = []
         self._hash_ultimo: str = "0" * 64   # hash génesis
 
-    @icontract.require(lambda tx: tx.importe > 0,
-                       "Solo se registran transacciones con importe positivo")
+    @icontract.require(lambda tx: tx.importe > 0, "Solo se registran transacciones con importe positivo")
     def anadir(self, tx: Transaccion) -> None:
-        """Añade una transacción a la cadena."""
+        """añade una transacción a la cadena."""
         bloque = {
             "indice":      len(self._bloques),
             "hash_previo": self._hash_ultimo,
-            "tx":          tx.to_dict(),
-        }
+            "tx":          tx.to_dict(),       }
         bloque_bytes = json.dumps(bloque, sort_keys=True).encode("utf-8")
         bloque["hash"] = hashlib.sha256(bloque_bytes).hexdigest()
         self._bloques.append(bloque)
         self._hash_ultimo = bloque["hash"]
 
     def historial(self) -> list[dict]:
-        """Devuelve una copia del historial completo."""
+        """copia del historial completo."""
         return list(self._bloques)
 
     def es_integra(self) -> bool:
-        """Verifica la integridad de la cadena completa."""
+        """verifica la integridad de la cadena completa."""
         for i, bloque in enumerate(self._bloques):
             esperado = bloque["hash_previo"]
             anterior = "0" * 64 if i == 0 else self._bloques[i - 1]["hash"]
@@ -231,27 +226,20 @@ class Blockchain:
 
 class SistemaCipherCoin:
     """
-    Fachada principal del sistema de criptomoneda.
+    componente principal del sistema de criptomoneda.
 
-    Orquesta wallets, transferencias, comisiones y reputación.
+    gestiona wallets, transferencias, comisiones y reputación.
     Los 4 wallets predefinidos se inicializan con fondos de ejemplo.
     """
 
     # clave maestra interna del sistema (solo para operaciones de estado)
     _CLAVE_SISTEMA = "ciphercoinSistema#2026!"
 
-    def __init__(
-        self,
-        estrategia_comision: Optional[EstrategiaComision] = None,
-        auditoria: Optional[ServicioAuditoriaCripto] = None,
-    ):
+    def __init__(self, estrategia_comision: Optional[EstrategiaComision] = None,
+        auditoria: Optional[ServicioAuditoriaCripto] = None, ):
         # strategy: comisión inyectable, por defecto intervalos
-        self._comision: EstrategiaComision = (
-            estrategia_comision or ComisionProgresiva()
-        )
-        self._auditoria: ServicioAuditoriaCripto = (
-            auditoria or AuditoriaArchivoLog()
-        )
+        self._comision: EstrategiaComision = (estrategia_comision or ComisionProgresiva())
+        self._auditoria: ServicioAuditoriaCripto = (auditoria or AuditoriaArchivoLog())
         self._blockchain = Blockchain()
         self._wallets: dict[str, Wallet] = {}
 
@@ -263,50 +251,41 @@ class SistemaCipherCoin:
     # ------------------------------------------------------------------
 
     def _inicializar_wallets(self) -> None:
-        """Crea los cuatro wallets del ecosistema con fondos iniciales."""
+        """crea los cuatro wallets del ecosistema con fondos iniciales."""
         definiciones = [
-            ("Estado ciphercoin",  TipoWallet.ESTADO,  10_000.0),
-            ("Alice (Usuario)",    TipoWallet.USUARIO,  1_000.0),
-            ("Bob (Usuario)",      TipoWallet.USUARIO,  1_000.0),
-            ("TechPyme S.L.",      TipoWallet.PYME,     5_000.0),
-        ]
+            ("Estado ciphercoin",  TipoWallet.ESTADO,  100.0),
+            ("Alice (Usuario)",    TipoWallet.USUARIO,  25.0),
+            ("Bob (Usuario)",      TipoWallet.USUARIO,  25.0),
+            ("TechPyme S.L.",      TipoWallet.PYME,     50.0), ]
         for nombre, tipo, saldo_inicial in definiciones:
             direccion = Wallet.generar_direccion(nombre, tipo)
-            wallet = Wallet(
-                direccion=direccion,
-                nombre=nombre,
-                tipo=tipo,
-                saldo=saldo_inicial,
-            )
+            wallet = Wallet(direccion=direccion, nombre=nombre, tipo=tipo, saldo=saldo_inicial,)
             self._wallets[direccion] = wallet
-            self._auditoria.registrar(
-                "WALLET_CREADA",
-                f"{nombre} | tipo={tipo.value} | dir={direccion}"
-            )
+            self._auditoria.registrar("WALLET_CREADA", f"{nombre} | tipo={tipo.value} | dir={direccion}")
 
     # ------------------------------------------------------------------
     # Consultas
     # ------------------------------------------------------------------
 
     def obtener_wallet(self, direccion: str) -> Wallet:
-        """Devuelve la wallet correspondiente a la dirección dada."""
+        """devuelve la wallet correspondiente a la dirección."""
         if direccion not in self._wallets:
             raise ErrorWalletNoEncontrada(f"Dirección no encontrada: {direccion}")
         return self._wallets[direccion]
 
     def listar_wallets(self) -> list[Wallet]:
-        """Devuelve todas las wallets del sistema."""
+        """devuelve todas las wallets del sistema."""
         return list(self._wallets.values())
 
     def direccion_por_nombre(self, nombre: str) -> str:
-        """Busca la dirección de una wallet por nombre (coincidencia exacta)."""
+        """busca la dirección de una wallet por nombre."""
         for w in self._wallets.values():
             if w.nombre == nombre:
                 return w.direccion
         raise ErrorWalletNoEncontrada(f"Wallet no encontrada: {nombre!r}")
 
     def wallet_estado(self) -> Wallet:
-        """Devuelve la wallet de estado del sistema."""
+        """devuelve la wallet de estado del sistema."""
         for w in self._wallets.values():
             if w.tipo == TipoWallet.ESTADO:
                 return w
@@ -316,14 +295,8 @@ class SistemaCipherCoin:
     # Transferencia
     # ------------------------------------------------------------------
 
-    @icontract.require(lambda importe: importe > 0,
-                       "El importe debe ser positivo")
-    def transferir(
-        self,
-        origen_dir:  str,
-        destino_dir: str,
-        importe:     float,
-    ) -> Transaccion:
+    @icontract.require(lambda importe: importe > 0, "El importe debe ser positivo")
+    def transferir(self, origen_dir: str, destino_dir: str, importe: float,) -> Transaccion:
         """
         Ejecuta una transferencia entre dos wallets.
 
@@ -339,7 +312,7 @@ class SistemaCipherCoin:
         origen  = self._obtener_wallet_validada(origen_dir)
         destino = self._obtener_wallet_validada(destino_dir)
 
-        # Calcular comisión
+        # calcular comisión
         comision = self._comision.calcular(importe, origen.reputacion)
         total    = round(importe + comision, 8)
 
@@ -394,8 +367,7 @@ class SistemaCipherCoin:
         self._obtener_wallet_validada(direccion)   # valida existencia
         return [
             b["tx"] for b in self._blockchain.historial()
-            if b["tx"]["origen"] == direccion or b["tx"]["destino"] == direccion
-        ]
+            if b["tx"]["origen"] == direccion or b["tx"]["destino"] == direccion]
 
     def historial_completo(self) -> list[dict]:
         """Devuelve toda la blockchain como lista de dicts."""

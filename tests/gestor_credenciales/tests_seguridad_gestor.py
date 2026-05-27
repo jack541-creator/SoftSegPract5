@@ -1,12 +1,24 @@
 import unittest
+import os, sys
+
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, PROJECT_ROOT)
+
 from src.gestor_credenciales.gestor_credenciales import GestorCredenciales, ErrorPoliticaPassword, ErrorAutenticacion
+from src.logger.access_control import ContextoSeguridad, RolUsuario
 from hypothesis import given, settings
 from hypothesis.strategies import text
 
 
 class TestSeguridadGestorCredenciales(unittest.TestCase):
     def setUp(self):
+        if os.path.exists("log_gestor_credenciales.log"):
+            os.remove("log_gestor_credenciales.log")
+        ContextoSeguridad().iniciar_sesion("test_admin", RolUsuario.ADMIN)
         self.gestor = GestorCredenciales("claveMaestraSegura123!")
+
+    def tearDown(self):
+        ContextoSeguridad().cerrar_sesion()
 
     # Tests de seguridad
 
@@ -36,7 +48,7 @@ class TestSeguridadGestorCredenciales(unittest.TestCase):
             with self.subTest(servicio=servicio):
                 with self.assertRaises(ValueError):
                     self.gestor.anadir_credencial(
-                        "claveMaestra123!",
+                        "claveMaestraSegura123!",
                         servicio,
                         "usuario_test",
                         "PasswordSegura123!"

@@ -3,10 +3,18 @@ from abc import ABC, abstractmethod
 from datetime import datetime, UTC
 from enum import Enum
 
-# =========================================================
-# EXCEPCIONES
-# =========================================================
+# sistema de logging seguro
+from src.logger.access_control import access_control, ContextoSeguridad, RolUsuario
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from logger.log_util import (anadir_al_log, verificar_cadena_hashes, 
+    inicializar_log, configure_logging, existe_archivo, archivo_vacio)
+
+# =========================================================
+#  EXCEPCIONES
+# =========================================================
 
 class ErrorPoliticaPassword(Exception):
     pass
@@ -23,11 +31,9 @@ class ErrorServicioNoEncontrado(Exception):
 class ErrorCredencialExistente(Exception):
     pass
 
-
 # =========================================================
-# INTERFAZ HASH
+#  INTERFAZ HASH
 # =========================================================
-
 
 class ServicioHash(ABC):
     @abstractmethod
@@ -47,9 +53,8 @@ class ServicioAuditoria(ABC):
 
 
 # =========================================================
-# ENUM FORTALEZA
+#  FORTALEZA
 # =========================================================
-
 
 class FortalezaPassword(str, Enum):
     DEBIL  = "débil"
@@ -58,9 +63,8 @@ class FortalezaPassword(str, Enum):
 
 
 # =========================================================
-# OCP: INTERFAZ POLÍTICA DE PASSWORD (Strategy)
+#  OCP: INTERFAZ POLÍTICA DE PASSWORD (Strategy)
 # =========================================================
-
 
 class PoliticaPassword(ABC):
     """Interfaz para la política de validación de contraseñas.
@@ -96,9 +100,8 @@ class AuditLogger(ServicioAuditoria):
 
 
 # =========================================================
-# IMPLEMENTACIÓN BCRYPT
+#  IMPLEMENTACIÓN BCRYPT
 # =========================================================
-
 
 class ServicioHashBcrypt(ServicioHash):
     def hash_clave(self, clave: str) -> bytes:
@@ -109,9 +112,8 @@ class ServicioHashBcrypt(ServicioHash):
 
 
 # =========================================================
-# FACTORY METHOD  (GoF)
+#  FACTORY METHOD  (GoF)
 # =========================================================
-
 
 class HashFactory(ABC):
     """clase base abstracta, declara el factory method"""
@@ -150,21 +152,17 @@ def obtener_factory(tipo: str = "bcrypt") -> HashFactory:
 
 
 # =========================================================
-# VALIDADOR PASSWORD (implementación por defecto de PoliticaPassword)
+#  VALIDADOR PASSWORD (R)
 # =========================================================
 
-
 class ValidadorPassword(PoliticaPassword):  # <- hereda de PoliticaPassword
-    PASSWORDS_COMUNES = {"password", "123456", "12345678", "qwerty", "abc123",
-        "111111", "123123", "admin", "user", "contraseña", "0000000", "seguro",
-        "hola", "abcdefg",}
-
+    PASSWORDS_COMUNES = {"password", "123456", "12345678", "qwerty", "abc123","111111",
+        "123123", "admin", "user", "contraseña", "0000000", "seguro", "hola", "abcdefg",}
     SIMBOLOS = set(r"!@#$%^&*()-_=+[]{}|;:',.<>?/`~")
-
     TRIVIALES = ["12345", "qwerty"]
 
     def verificar_fortaleza(self, password: str) -> FortalezaPassword:
-        # ---------- Validación de entrada ----------
+        
         if not isinstance(password, str) or password == "":
             raise ErrorPoliticaPassword()
 
@@ -184,26 +182,20 @@ class ValidadorPassword(PoliticaPassword):  # <- hereda de PoliticaPassword
         lower_pwd = password.lower()
         contiene_trivial = any(x in lower_pwd for x in self.TRIVIALES)
 
-        cumple_mezcla = (
-            tiene_mayus
-            and tiene_minus
-            and tiene_num
-            and not mayus_solo_inicio
-            and not contiene_trivial)
+        cumple_mezcla = (tiene_mayus and tiene_minus and tiene_num and not mayus_solo_inicio and not contiene_trivial)
 
         # ---------- Criterio 3: símbolos ----------
         posiciones_simbolos = [i for i, c in enumerate(password) if c in self.SIMBOLOS]
 
-        cumple_simbolos = len(posiciones_simbolos) > 0 and not all(
-            i == len(password) - 1 for i in posiciones_simbolos)
+        cumple_simbolos = len(posiciones_simbolos) > 0 and not all(i == len(password) - 1 for i in posiciones_simbolos)
 
         # ---------- Criterio 4: no común ----------
         no_comun = password.lower() not in self.PASSWORDS_COMUNES
 
-        # ---------- Score ----------
+        # ---------- puntos ----------
         criterios = sum([cumple_longitud, cumple_mezcla, cumple_simbolos, no_comun])
 
-        # ---------- Clasificación ----------
+        # ---------- clasificación ----------
         if criterios <= 1:
             return FortalezaPassword.DEBIL
         elif criterios <= 3:
@@ -211,23 +203,32 @@ class ValidadorPassword(PoliticaPassword):  # <- hereda de PoliticaPassword
         else:
             return FortalezaPassword.FUERTE
 
-
 # =========================================================
-# GESTOR CREDENCIALES
+#  GESTOR CREDENCIALES
 # =========================================================
-
 
 class GestorCredenciales:
-    def __init__(
-        self,
-        clave_maestra: str,
-        tipo_hash: str = "bcrypt",
-        politica_password: PoliticaPassword | None = None,):  # <- nuevo parámetro OCP
-        # FACTORY METHOD — la fábrica concreta decide qué ServicioHash crear
+    
+    def __init__(self, clave_maestra: str, tipo_hash: str = "bcrypt", log_file="log_gestor_credenciales.log", politica_password: PoliticaPassword | None = None,):
+
+        # inicializar logging seguro
+        self.log_file = log_file
+        configure_logging(log_file)
+        inicializar_log()
+        # verificar integridad del log al iniciar
+        if not existe_archivo(log_file) or archivo_vacio(log_file):
+            # no debería entrar aquí porque cada vez que se inicia no está vacío
+            anadir_al_log("info", f"SISTEMA INICIADO: Nuevo archivo de log ({log_file})")
+        elif verificar_cadena_hashes(log_file):
+            anadir_al_log("info", f"SISTEMA INICIADO: Log íntegro ({log_file})", log_file)
+        else:
+            anadir_al_log("warning", f"LOG CORRUPTO: El archivo {log_file} ha sido modificado", log_file)
+            print(f"ADVERTENCIA: El archivo de log {log_file} puede estar corrupto", log_file)
+        
         factory = obtener_factory(tipo_hash)
         self._hash_service = factory.obtener_servicio()
 
-        self._audit_logger = AuditLogger()
+        self._audit_logger = AuditLogger("ciphercoin_audit.log")
 
         # OCP/Strategy: si no se inyecta ninguna política, se usa la por defecto
         self._validator = politica_password if politica_password is not None else ValidadorPassword()
@@ -235,19 +236,27 @@ class GestorCredenciales:
         self._clave_maestra_hashed = self._hash_service.hash_clave(clave_maestra)
 
         self._credenciales = {}
+        anadir_al_log("info", "GestorCredenciales inicializado correctamente")
 
     # =====================================================
-    # autenticación
+    #  autenticación
     # =====================================================
 
-    def _autenticar(self, clave_maestra: str):
+    def _autenticar(self, clave_maestra: str, contexto: str = ""):
         if not self._hash_service.verificar_clave(clave_maestra, self._clave_maestra_hashed):
             self._audit_logger.registrar_evento("AUTENTICACION_FALLIDA", "Clave maestra incorrecta",)
             raise ErrorAutenticacion()
+        if contexto:
+            anadir_al_log("debug", f"AUTENTICACION_EXITOSA - {contexto}") 
+        else:
+            anadir_al_log("debug", "AUTENTICACION_EXITOSA") 
+            anadir_al_log("debug", f"AUTENTICACION_EXITOSA {contexto}") 
 
     # =====================================================
-    # anadir credencial
+    #  anadir credencial (R)
     # =====================================================
+
+    @access_control
     def anadir_credencial(self, clave_maestra, servicio, usuario, password):
         simbolos = "!>;'\\/[]{}:\n\r|&"
         palabras_peligrosas = ["DROP", "DELETE", "UPDATE", "ALTER", "CREATE",
@@ -255,7 +264,8 @@ class GestorCredenciales:
 
         for valor in [clave_maestra, servicio, usuario, password]:
             if not isinstance(valor, str):
-                raise TypeError("Todos los parámetros deben ser str")
+                raise TypeError("Parámetros de tipo inadecuado.")
+                anadir_al_log("error", f"ERROR_ANADIR_CREDENCIAL: {error_msg}")
 
         clave_maestra = clave_maestra.strip()
         servicio = servicio.strip()
@@ -272,9 +282,11 @@ class GestorCredenciales:
             raise ValueError()
 
         if any(c in simbolos for c in usuario) or any(c in simbolos for c in servicio):
+            anadir_al_log("error", f"Símbolos no permitidos. Servicio: {servicio}, Usuario: {usuario}")
             raise ValueError()
 
         if any(p.upper() in palabras_peligrosas for p in servicio.split()):
+            anadir_al_log("critical", f"Posible explotación. Servicio: {servicio}")
             raise ValueError()
 
         if servicio not in self._credenciales:
@@ -286,24 +298,16 @@ class GestorCredenciales:
             raise ErrorCredencialExistente()
 
         self._autenticar(clave_maestra)
-        self._credenciales[servicio][usuario] = {
-            "hash": self._hash_service.hash_clave(password)
-        }
+        self._credenciales[servicio][usuario] = {"hash": self._hash_service.hash_clave(password)}
 
-        self._audit_logger.registrar_evento(
-            "CREDENCIAL_ANADIDA",
-            f"Servicio={servicio}, Usuario={usuario}",
-        )
-
+        anadir_al_log("info", f"CREDENCIAL_ANADIDA: Servicio={servicio}, Usuario={usuario}")
         return True
 
     # =====================================================
-    # obtener password
+    #  obtener password
     # =====================================================
 
-    def obtener_hash_password(
-        self, clave_maestra: str, servicio: str, usuario: str
-    ) -> bytes:
+    def obtener_hash_password(self, clave_maestra: str, servicio: str, usuario: str) -> bytes:
         for valor in [clave_maestra, servicio, usuario]:
             if not isinstance(valor, str):
                 raise TypeError("Todos los parámetros deben ser str")
@@ -325,18 +329,15 @@ class GestorCredenciales:
 
         self._audit_logger.registrar_evento(
             "CREDENCIAL_CONSULTADA",
-            f"Servicio={servicio}, Usuario={usuario}",
-        )
+            f"Servicio={servicio}, Usuario={usuario}",)
 
         return self._credenciales[servicio][usuario]["hash"]
 
-    def obtener_password(
-        self, clave_maestra: str, servicio: str, usuario: str
-    ) -> bytes:
+    def obtener_password(self, clave_maestra: str, servicio: str, usuario: str) -> bytes:
         return self.obtener_hash_password(clave_maestra, servicio, usuario)
 
     # =====================================================
-    # Cambiar password
+    #  Cambiar password
     # =====================================================
 
     def cambiar_password(
@@ -345,8 +346,7 @@ class GestorCredenciales:
         servicio: str,
         usuario: str,
         password_actual: str,
-        password_nueva: str,
-    ) -> bool:
+        password_nueva: str,) -> bool:
         for valor in [clave_maestra, password_actual, password_nueva]:
             if not isinstance(valor, str):
                 raise TypeError("Todos los parámetros deben ser str")
@@ -383,13 +383,13 @@ class GestorCredenciales:
         return True
 
     # =====================================================
-    # es_password_segura (wrapper de es_aceptable)
+    #  es_password_segura (wrapper de es_aceptable)
     # =====================================================
     def es_password_segura(self, password: str) -> bool:
         return self._validator.es_aceptable(password)
 
     # =====================================================
-    # listar servicios
+    #  listar servicios
     # =====================================================
 
     def listar_servicios(self, clave_maestra: str) -> list:
@@ -397,7 +397,7 @@ class GestorCredenciales:
         return list(self._credenciales.keys())
 
     # =====================================================
-    # listar usuarios
+    #  listar usuarios
     # =====================================================
     def listar_usuarios(self, clave_maestra: str) -> list:
         self._autenticar(clave_maestra)
@@ -409,11 +409,9 @@ class GestorCredenciales:
         return usuarios
 
     # =====================================================
-    # eliminar credencial
+    #  eliminar credencial
     # =====================================================
-    def eliminar_credencial(
-        self, clave_maestra: str, servicio: str, usuario: str
-    ) -> bool:
+    def eliminar_credencial(self, clave_maestra: str, servicio: str, usuario: str) -> bool:
         if servicio not in self._credenciales:
             raise ErrorServicioNoEncontrado()
 
@@ -429,21 +427,19 @@ class GestorCredenciales:
 
         self._audit_logger.registrar_evento(
             "CREDENCIAL_ELIMINADA",
-            f"Servicio={servicio}, Usuario={usuario}",
-        )
+            f"Servicio={servicio}, Usuario={usuario}",)
 
         return True
 
     # =====================================================
-    # cambiar usuario
+    #  cambiar usuario
     # =====================================================
     def cambiar_usuario(
         self,
         servicio: str,
         usuario_antiguo: str,
         usuario_nuevo: str,
-        clave_maestra: str,
-    ) -> bool:
+        clave_maestra: str,) -> bool:
         if not all(
             isinstance(x, str) and x.strip()
             for x in [servicio, usuario_antiguo, usuario_nuevo]
@@ -498,7 +494,7 @@ class GestorCredenciales:
         return True
 
     # =====================================================
-    # OTPs
+    #  OTPs
     # =====================================================
 
 

@@ -1,4 +1,8 @@
 import unittest
+import os, sys
+
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, PROJECT_ROOT)
 
 from src.ciphercoin.modelo import (
     SistemaCipherCoin,
@@ -10,16 +14,17 @@ from src.ciphercoin.modelo import (
     ErrorSaldoInsuficiente,
     ErrorWalletNoEncontrada,
     AuditoriaArchivoLog,)
-
+from src.logger.access_control import ContextoSeguridad, RolUsuario
 
 # =========================================================
-# TESTS: ComisionProgresiva
+#  TESTS: ComisionProgresiva
 # =========================================================
 
 class TestComisionProgresiva(unittest.TestCase):
     """Verifica invariantes del cálculo de comisiones."""
 
     def setUp(self):
+        
         self.comision = ComisionProgresiva()
         self.importes_muestra = [0.01, 0.5, 1.0, 5.0, 10.0, 25.0, 50.0, 100.0, 1000.0]
         self.reputaciones_muestra = [0, 5, 25, 50, 100, 500]
@@ -77,8 +82,7 @@ class TestComisionProgresiva(unittest.TestCase):
     def test_calculo_determinista(self):
         self.assertEqual(
             self.comision.calcular(10.0, 5),
-            self.comision.calcular(10.0, 5)
-        )
+            self.comision.calcular(10.0, 5) )
 
     # ── Precondiciones (icontract) ────────────────────────────────
 
@@ -248,9 +252,7 @@ class TestTransferencias(unittest.TestCase):
 
         tx = self.sistema.transferir(self.alice_dir, self.bob_dir, 10.0)
 
-        self.assertAlmostEqual(
-            estado.saldo, saldo_estado_ini + tx.comision, places=6
-        )
+        self.assertAlmostEqual(estado.saldo, saldo_estado_ini + tx.comision, places=6)
 
     def test_transferencia_usuario_a_pyme_suma_reputacion(self):
         alice = self.sistema.obtener_wallet(self.alice_dir)
@@ -330,8 +332,13 @@ class TestAutenticacion(unittest.TestCase):
 
     def setUp(self):
         import os
-        sistema = SistemaCipherCoin(auditoria=AuditoriaArchivoLog(os.devnull))
+        
         from src.ciphercoin.autenticacion import ServicioAutenticacion
+        # para pasar los @access_control
+        ContextoSeguridad().iniciar_sesion(usuario="test_user", rol=RolUsuario.ADMIN,
+            sesion_id="miClave!Super73Segura")
+        
+        sistema = SistemaCipherCoin(auditoria=AuditoriaArchivoLog(os.devnull))
         self.auth = ServicioAutenticacion(sistema)
 
     def test_login_correcto_alice(self):

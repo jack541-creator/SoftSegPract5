@@ -1,11 +1,8 @@
 """
-main.py — Punto de entrada de ciphercoin.
+Punto de entrada de ciphercoin.
 
 Ejecutar directamente:
     python main.py
-
-O bien, tras instalar el paquete:
-    ciphercoin
 """
 
 import sys
