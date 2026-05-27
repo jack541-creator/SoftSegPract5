@@ -50,48 +50,45 @@ class EstrategiaComision(ABC):
         """Devuelve la comisión absoluta a descontar del importe."""
 
 
-class ComisionPorIntervalos(EstrategiaComision):
+class ComisionProgresiva(EstrategiaComision):
     """
-    Comisión escalonada por intervalos de importe.
+    Comisión progresiva.
 
-    Intervalos base (extensibles en _TRAMOS):
-      [0,  5)  →  1 %
-      [5,  20) →  5 %
-      [20, 50) → 10 %
-      [50,∞)   → 15 %
+    La comisión tiene:
+      - una tarifa base fija (cubre el coste fijo por transacción)
+      - una comisión variable que aumenta con el importe
 
-    Descuento por reputación: −0,1 % por punto de reputación del remitente.
-    La comisión mínima es siempre 0 %.
+    La comisión total nunca supera el 5 % del importe.
     """
 
-    # Tramos: (límite_superior_exclusivo, tasa_base_porcentual)
-    # El último tramo cubre hasta infinito (None).
-    _TRAMOS: list[tuple[Optional[float], float]] = [
-        (5.0,   1.0),
-        (20.0,  5.0),
-        (50.0, 10.0),
-        (None, 15.0),
-    ]
+    TARIFA_BASE = 0.02 # 0.02 monedas
+    COMISION_MAXIMA = 0.05 # 5%
+    IMPORTE_LIMITE = 50.0  # a partir de aquí se aplica la comisión máxima
+    DESCUENTO_REPUTACION = 0.01
 
-    _DESCUENTO_POR_PUNTO = 0.1   # puntos porcentuales de descuento/reputación
-
-    @icontract.require(lambda importe: importe >= 0,
-                       "El importe no puede ser negativo")
+    @icontract.require(lambda importe: importe > 0,
+                       "El importe debe ser positivo")
     @icontract.require(lambda reputacion: reputacion >= 0,
                        "La reputación no puede ser negativa")
     @icontract.ensure(lambda result, importe: 0 <= result <= importe,
                       "La comisión debe estar en [0, importe]")
     def calcular(self, importe: float, reputacion: int) -> float:
-        tasa_base = self._tasa_base(importe)
-        descuento = reputacion * self._DESCUENTO_POR_PUNTO
-        tasa_final = max(0.0, tasa_base - descuento)
-        return round(importe * tasa_final / 100, 8)
+        importe_para_calculo = min(importe, self.IMPORTE_LIMITE)
 
-    def _tasa_base(self, importe: float) -> float:
-        for limite, tasa in self._TRAMOS:
-            if limite is None or importe < limite:
-                return tasa
-        return self._TRAMOS[-1][1]   # salvaguarda (inalcanzable)
+        comision_aplicable = (
+            self.COMISION_MAXIMA
+            * importe_para_calculo
+            / self.IMPORTE_LIMITE
+        )
+
+        factor_descuento = max(0.1, 1.0 - reputacion * self.DESCUENTO_REPUTACION)
+        tarifa_base = self.TARIFA_BASE * factor_descuento
+        comision_aplicable *= factor_descuento
+
+        comision_total = tarifa_base + importe * comision_aplicable
+        comision_maxima = importe * self.COMISION_MAXIMA
+
+        return round(min(comision_total, comision_maxima), 8)
 
 
 # =========================================================
@@ -250,7 +247,7 @@ class SistemaCipherCoin:
     ):
         # strategy: comisión inyectable, por defecto intervalos
         self._comision: EstrategiaComision = (
-            estrategia_comision or ComisionPorIntervalos()
+            estrategia_comision or ComisionProgresiva()
         )
         self._auditoria: ServicioAuditoriaCripto = (
             auditoria or AuditoriaArchivoLog()

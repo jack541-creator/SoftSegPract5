@@ -97,7 +97,7 @@ python -m pytest
 
 | Patrón         | Dónde                                          |
 |----------------|------------------------------------------------|
-| Strategy       | `EstrategiaComision` / `ComisionPorIntervalos` |
+| Strategy       | `EstrategiaComision` / `ComisionProgresiva` |
 | Facade         | `SistemaCipherCoin`                            |
 | Proxy          | `ProxySeguroGestorCredenciales` (original)     |
 | Factory Method | `Wallet.generar_direccion`                     |

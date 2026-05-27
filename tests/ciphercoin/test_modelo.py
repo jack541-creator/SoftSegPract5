@@ -2,7 +2,7 @@ import unittest
 
 from src.ciphercoin.modelo import (
     SistemaCipherCoin,
-    ComisionPorIntervalos,
+    ComisionProgresiva,
     TipoWallet,
     Wallet,
     Transaccion,
@@ -13,78 +13,84 @@ from src.ciphercoin.modelo import (
 
 
 # =========================================================
-# TESTS: ComisionPorIntervalos
+# TESTS: ComisionProgresiva
 # =========================================================
 
-class TestComisionPorIntervalos(unittest.TestCase):
-    """Verifica el cálculo de comisiones para cada tramo y con reputación."""
+class TestComisionProgresiva(unittest.TestCase):
+    """Verifica invariantes del cálculo de comisiones."""
 
     def setUp(self):
-        self.comision = ComisionPorIntervalos()
+        self.comision = ComisionProgresiva()
+        self.importes_muestra = [0.01, 0.5, 1.0, 5.0, 10.0, 25.0, 50.0, 100.0, 1000.0]
+        self.reputaciones_muestra = [0, 5, 25, 50, 100, 500]
 
-    # ── tramo [0, 5) → 1 % ────────────────────────────────────────
+    # ── Invariantes básicos ───────────────────────────────────────
 
-    def test_tramo_bajo_sin_reputacion(self):
-        resultado = self.comision.calcular(4.0, 0)
-        self.assertAlmostEqual(resultado, 0.04, places=6)
-
-    def test_tramo_bajo_con_reputacion_reduce_comision(self):
-        # 1% - (5 * 0.1%) = 0.5%  →  4.0 * 0.005 = 0.02
-        resultado = self.comision.calcular(4.0, 5)
-        self.assertAlmostEqual(resultado, 0.02, places=6)
-
-    def test_tramo_bajo_reputacion_excesiva_no_produce_negativo(self):
-        # 100 puntos * 0.1% = 10% de descuento > 1% base → comisión = 0
-        resultado = self.comision.calcular(4.0, 100)
-        self.assertEqual(resultado, 0.0)
-
-    # ── tramo [5, 20) → 5 % ───────────────────────────────────────
-
-    def test_tramo_medio_sin_reputacion(self):
-        resultado = self.comision.calcular(10.0, 0)
-        self.assertAlmostEqual(resultado, 0.5, places=6)
-
-    def test_tramo_medio_con_reputacion(self):
-        # 5% - (3 * 0.1%) = 4.7%  →  10 * 0.047 = 0.47
-        resultado = self.comision.calcular(10.0, 3)
-        self.assertAlmostEqual(resultado, 0.47, places=6)
-
-    # ── tramo [20, 50) → 10 % ─────────────────────────────────────
-
-    def test_tramo_alto_sin_reputacion(self):
-        resultado = self.comision.calcular(30.0, 0)
-        self.assertAlmostEqual(resultado, 3.0, places=6)
-
-    # ── tramo [50, ∞) → 15 % ──────────────────────────────────────
-
-    def test_tramo_maximo_sin_reputacion(self):
-        resultado = self.comision.calcular(100.0, 0)
-        self.assertAlmostEqual(resultado, 15.0, places=6)
-
-    def test_tramo_maximo_con_reputacion_alta(self):
-        # 15% - (10 * 0.1%) = 14%  →  100 * 0.14 = 14.0
-        resultado = self.comision.calcular(100.0, 10)
-        self.assertAlmostEqual(resultado, 14.0, places=6)
-
-    # ── casos borde ────────────────────────────────────────────────
-
-    def test_importe_cero(self):
-        resultado = self.comision.calcular(0.0, 0)
-        self.assertEqual(resultado, 0.0)
-
-    def test_importe_exactamente_en_limite_tramo(self):
-        # 5.0 entra en el segundo tramo [5, 20) → 5%
-        resultado = self.comision.calcular(5.0, 0)
-        self.assertAlmostEqual(resultado, 0.25, places=6)
-
-    # ── postcondición: comisión siempre ≤ importe ──────────────────
+    def test_comision_no_negativa(self):
+        for importe in self.importes_muestra:
+            for rep in self.reputaciones_muestra:
+                with self.subTest(importe=importe, rep=rep):
+                    self.assertGreaterEqual(self.comision.calcular(importe, rep), 0)
 
     def test_comision_nunca_supera_importe(self):
-        for importe in [0.5, 5.0, 20.0, 50.0, 200.0]:
-            for rep in [0, 5, 100]:
+        for importe in self.importes_muestra:
+            for rep in self.reputaciones_muestra:
                 with self.subTest(importe=importe, rep=rep):
-                    c = self.comision.calcular(importe, rep)
-                    self.assertLessEqual(c, importe)
+                    self.assertLessEqual(self.comision.calcular(importe, rep), importe)
+
+    def test_comision_respeta_comision_maxima(self):
+        cap = ComisionProgresiva.COMISION_MAXIMA
+        for importe in self.importes_muestra:
+            for rep in self.reputaciones_muestra:
+                with self.subTest(importe=importe, rep=rep):
+                    self.assertLessEqual(
+                        self.comision.calcular(importe, rep),
+                        importe * cap + 1e-9
+                    )
+
+    # ── Monotonía ─────────────────────────────────────────────────
+
+    def test_reputacion_no_aumenta_comision(self):
+        """Más reputación nunca produce más comisión."""
+        for importe in [1.0, 10.0, 50.0, 100.0]:
+            comisiones = [
+                self.comision.calcular(importe, rep)
+                for rep in [0, 10, 25, 50, 100]
+            ]
+            for c_menor_rep, c_mayor_rep in zip(comisiones, comisiones[1:]):
+                with self.subTest(importe=importe):
+                    self.assertLessEqual(c_mayor_rep, c_menor_rep + 1e-9)
+
+    def test_comision_no_decrece_con_importe(self):
+        """Más importe nunca produce menos comisión absoluta."""
+        for rep in [0, 25, 50]:
+            comisiones = [
+                self.comision.calcular(importe, rep)
+                for importe in [1.0, 5.0, 10.0, 25.0, 50.0, 100.0]
+            ]
+            for c_menor_imp, c_mayor_imp in zip(comisiones, comisiones[1:]):
+                with self.subTest(rep=rep):
+                    self.assertLessEqual(c_menor_imp, c_mayor_imp + 1e-9)
+
+    # ── Determinismo ──────────────────────────────────────────────
+
+    def test_calculo_determinista(self):
+        self.assertEqual(
+            self.comision.calcular(10.0, 5),
+            self.comision.calcular(10.0, 5)
+        )
+
+    # ── Precondiciones (icontract) ────────────────────────────────
+
+    def test_importe_no_positivo_rechazado(self):
+        with self.assertRaises(Exception):
+            self.comision.calcular(0.0, 0)
+        with self.assertRaises(Exception):
+            self.comision.calcular(-1.0, 0)
+
+    def test_reputacion_negativa_rechazada(self):
+        with self.assertRaises(Exception):
+            self.comision.calcular(10.0, -1)
 
 
 # =========================================================
