@@ -84,9 +84,9 @@ def _rounded_rect(canvas: tk.Canvas, x1, y1, x2, y2, radius=24, **kwargs):
 
 class Card(tk.Frame):
     """Panel tipo tarjeta"""
-    def __init__(self, parent, **kw):
+    def __init__(self, parent, borderwidth=1, **kw):
         bg = kw.pop("bg", COLORES["fondo_card"])
-        super().__init__(parent,bg=bg, padx=18,pady=16,highlightthickness=1,highlightbackground=COLORES["linea"],highlightcolor=COLORES["linea"],bd=0,**kw)
+        super().__init__(parent,bg=bg, padx=18, pady=16, highlightthickness=borderwidth, highlightbackground=COLORES["linea"],highlightcolor=COLORES["linea"],bd=0,**kw)
 
 class Boton(tk.Canvas):
     def __init__(self, parent, texto: str, comando=None,color=None, fg=None, width=None, height=38, **kw):
@@ -151,13 +151,13 @@ class LoginFrame(tk.Frame):
         self.pack(fill="both", expand=True)
 
         # ── Logo / título ──────────────────────────────────────────
-        tk.Label(self,text="✦ CipherCoin",bg=COLORES["fondo"],fg=COLORES["violeta"],font=("Segoe UI", 34, "bold")).pack(pady=(40, 4))
-        tk.Label(self,text="Ofrecemos Wallets seguros impulsando pymes", bg=COLORES["fondo"],fg=COLORES["texto_suave"],font=FUENTE_NORMAL).pack(pady=(0, 20))
+        tk.Label(self,text="✦ CipherCoin",bg=COLORES["fondo"],fg=COLORES["violeta"],font=("Segoe UI", 100, "bold")).pack(pady=(40, 4))
+        tk.Label(self,text="La Criptomoneda para los Pequeños Negocios", bg=COLORES["fondo"],fg=COLORES["texto_suave"],font=("Segoe UI", 20)).pack(pady=(0, 20))
 
         # ── card de login ──────────────────────────────────────────
-        card = Card(self)
+        card = Card(self, borderwidth=0)
         card.pack(padx=60, pady=10, ipadx=10, ipady=10)
-        tk.Label(card, text="Iniciar sesión",bg=COLORES["fondo_card"],fg=COLORES["texto"],font=FUENTE_GRANDE).pack(anchor="w", pady=(0, 14))
+        tk.Label(card, text="Iniciar sesión",bg=COLORES["fondo_card"],fg=COLORES["texto"],font=FUENTE_GRANDE).pack(anchor="center", pady=(0, 5))
         # --------------campo de usuario ---------------------------------------------
         self._campo_usuario = EntradaLabel(card, "Usuario", width=32)
         self._campo_usuario.pack(fill="x", pady=5)
@@ -168,30 +168,24 @@ class LoginFrame(tk.Frame):
         self._lbl_error = tk.Label(card,text="",bg=COLORES["fondo_card"],fg=COLORES["error"],font=FUENTE_PEQUEÑA)
         self._lbl_error.pack(anchor="w", pady=(4, 0))
 
-        Boton(card, "Entrar", self._login).pack(fill="x", pady=(14, 0))
+        Boton(card, "Entrar", self._login).pack(pady=(5, 0))
 
         # ── credenciales de demo ───────────────────────────────────
-        demo_frame = Card(self, bg=COLORES["fondo"])
-        demo_frame.pack(pady=10)
-        tk.Label(demo_frame,text="Credenciales de demo",bg=COLORES["fondo"],fg=COLORES["texto_suave"],font=FUENTE_PEQUEÑA).pack(anchor="w", pady=(0, 6))
+        demo_frame = Card(self, bg=COLORES["fondo"], borderwidth=0)
+        demo_frame.pack(pady=0)
+        #tk.Label(demo_frame,text="Credenciales de Demo",bg=COLORES["fondo"],fg=COLORES["texto_suave"],font=FUENTE_PEQUEÑA).pack(anchor="center", pady=(0, 6))
+
+        contenedor_botones_demo = tk.Frame(self, bg=COLORES["fondo"])
+        contenedor_botones_demo.pack(pady=0)
 
         for cred in ServicioAutenticacion.credenciales_demo():
-            fila = tk.Frame(demo_frame, bg=COLORES["fondo"], height=32)
-            fila.pack(fill="x", pady=2)
+            fila = tk.Frame(contenedor_botones_demo, bg=COLORES["fondo"], height=32)
+            fila.pack(side="left", fill="x", pady=2)
             color = COLORES["pyme"] if cred["rol"] == "PYME" else (COLORES["estado"] if cred["rol"] == "Admin" else COLORES["usuario"])
             
-            tk.Label(fila, text=f"[{cred['rol']}]", bg=COLORES["fondo"], fg=color, 
-             font=FUENTE_PEQUEÑA, width=10, anchor="w").pack(side="left")
-            
-            tk.Label(fila, text=f"  {cred['usuario']}", bg=COLORES["fondo"], fg=COLORES["texto"], 
-             font=FUENTE_MONO, width=14, anchor="w").pack(side="left")
-            
-            tk.Label(fila, text=f"  {cred['password']}", bg=COLORES["fondo"], fg=COLORES["texto_suave"], 
-             font=FUENTE_MONO, width=18, anchor="w").pack(side="left")
-            
-            btn = tk.Button(fila, text="↑", bg=COLORES["fondo_input"], fg=COLORES["texto"], relief="flat", cursor="hand2", width=3, height=1,
+            btn = tk.Button(fila, text=f"{cred['usuario']}\n({cred['rol']})", bg=COLORES["fondo"], fg=color, relief="flat", cursor="hand2", width=5, height=3,
                     command=lambda u=cred["usuario"], p=cred["password"]: (self._campo_usuario.var.set(u), self._campo_password.var.set(p),))
-            btn.pack(side="left", padx=(6, 0))
+            btn.pack(side="left", padx=(6, 2))
 
         # si le damos Enter ejcuta "Entrar" -----------
         self._app.bind("<Return>", lambda e: self._login())
