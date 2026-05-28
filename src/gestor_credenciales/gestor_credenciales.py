@@ -1,6 +1,6 @@
 import bcrypt, string, random
 from abc import ABC, abstractmethod
-from datetime import datetime, UTC
+from datetime import datetime, UTC, timedelta
 from enum import Enum
 
 # sistema de logging seguro
@@ -28,7 +28,19 @@ class ErrorServicioNoEncontrado(Exception):
     pass
 
 
+class ErrorUsuarioNoEncontrado(Exception):
+    pass
+
+
 class ErrorCredencialExistente(Exception):
+    pass
+
+
+class ErrorTokenNoCreado(Exception):
+    pass
+
+
+class ErrorTokenCaducado(Exception):
     pass
 
 # =========================================================
@@ -575,3 +587,70 @@ class GestorCredenciales:
             return True
 
         return False
+    
+    # =====================================================
+    #  TOKENS
+    # =====================================================
+
+    def generar_token(self, clave_maestra: str, servicio: str, usuario: str, password: str) -> str:
+
+        self._autenticar(clave_maestra)
+        
+        # Comprobación de existencia de servicio y usuario
+        if servicio not in self._credenciales:
+            raise ErrorServicioNoEncontrado
+        elif usuario not in self._credenciales[servicio]:
+            raise ErrorUsuarioNoEncontrado
+        
+        # Auntenticación del usuario
+        hash = self.obtener_hash_password(clave_maestra, servicio, usuario)
+        if not self._hash_service.verificar_clave(password, hash):
+            raise ErrorAutenticacion
+        
+        # Creación del token
+        caracteres = string.ascii_letters + string.digits
+        token = "".join(
+                random.choice(caracteres)
+                for _ in range(16)
+        )
+
+        
+        self._credenciales[servicio][usuario]["token"] = {
+            "hash" : self._hash_service.hash_clave(token),
+            "expiration" : datetime.now(UTC) + timedelta(hours=1)
+        }
+
+        return token
+    
+    
+    def autenticacion_token(self, clave_maestra: str, servicio: str, usuario: str, token: str) -> bool:
+        
+        self._autenticar(clave_maestra)
+
+        # Comprobación de existencia de servicio y usuario
+        if servicio not in self._credenciales:
+            raise ErrorServicioNoEncontrado
+        elif usuario not in self._credenciales[servicio]:
+            raise ErrorUsuarioNoEncontrado
+        elif "token" not in self._credenciales[servicio][usuario]:
+            raise ErrorTokenNoCreado
+        
+        # Auntenticación del token y comprobación de la caducidad
+        if datetime.now(UTC) > self._credenciales[servicio][usuario]["token"]["expiration"]:
+            raise ErrorTokenCaducado
+        
+        return self._hash_service.verificar_clave(token, self._credenciales[servicio][usuario]["token"]["hash"])
+    
+    def renovar_sesion(self, clave_maestra: str, servicio: str, usuario: str) -> None:
+
+        self._autenticar(clave_maestra)
+
+        # Comprobación de existencia de servicio y usuario
+        if servicio not in self._credenciales:
+            raise ErrorServicioNoEncontrado
+        elif usuario not in self._credenciales[servicio]:
+            raise ErrorUsuarioNoEncontrado
+        elif "token" not in self._credenciales[servicio][usuario]:
+            raise ErrorTokenNoCreado
+        
+        self._credenciales[servicio][usuario]["token"]["expiration"] = datetime.now(UTC) + timedelta(hours=1)

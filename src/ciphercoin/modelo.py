@@ -1,3 +1,4 @@
+# La contraseña de prueba de los usuarios es "4nv=8GsOy94R" y la clave maestra del gestor de prueba es "claveMaestraSegura123!"
 import hashlib
 import json
 import time
@@ -7,6 +8,12 @@ from datetime import datetime, UTC
 from enum import Enum
 from typing import Optional
 import icontract
+from src.logger.access_control import ContextoSeguridad, RolUsuario
+
+
+from src.gestor_credenciales.gestor_credenciales import (
+    GestorCredenciales
+)
 
 # =========================================================
 # EXCEPCIONES
@@ -23,6 +30,9 @@ class ErrorTransaccionInvalida(Exception):
 
 class ErrorAccesoNoAutorizado(Exception):
     """Intento de operación sin los privilegios necesarios."""
+
+class ErrorGestorYaInicializado(Exception):
+    """Intento de iniciar el gestor cuando este ya existe"""
 
 # =========================================================
 # ENUMERADOS
@@ -242,9 +252,18 @@ class SistemaCipherCoin:
         self._auditoria: ServicioAuditoriaCripto = (auditoria or AuditoriaArchivoLog())
         self._blockchain = Blockchain()
         self._wallets: dict[str, Wallet] = {}
+        self._gestor_credenciales = None
+        self._ctx = ContextoSeguridad()
+
+        self._ctx.iniciar_sesion(
+        usuario="admin",
+        rol=RolUsuario.ADMIN
+        )
 
         # inicializar las 4 wallets predefinidas
+        self._inicializacion_gestor("claveMaestraSegura123!")
         self._inicializar_wallets()
+        
 
     # ------------------------------------------------------------------
     # Inicialización de wallets
@@ -262,6 +281,20 @@ class SistemaCipherCoin:
             wallet = Wallet(direccion=direccion, nombre=nombre, tipo=tipo, saldo=saldo_inicial,)
             self._wallets[direccion] = wallet
             self._auditoria.registrar("WALLET_CREADA", f"{nombre} | tipo={tipo.value} | dir={direccion}")
+            self._gestor_credenciales.anadir_credencial("claveMaestraSegura123!", "Ciphercoin", direccion, "4nv=8GsOy94R")
+
+    # ------------------------------------------------------------------
+    # Inicialización del gestor
+    # ------------------------------------------------------------------
+
+    def _inicializacion_gestor(self, clave_maestra : str) -> None:
+
+        # Comprueba que el gestor no esté creado
+        if isinstance(self._gestor_credenciales, GestorCredenciales):
+            raise ErrorGestorYaInicializado
+        else:
+            self._gestor_credenciales = GestorCredenciales(clave_maestra)
+        
 
     # ------------------------------------------------------------------
     # Consultas

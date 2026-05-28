@@ -319,7 +319,7 @@ class TestTransferencias(unittest.TestCase):
     def test_conservacion_de_valor_total(self):
         """La suma total de saldos debe conservarse (comisión redistribuida)."""
         suma_ini = sum(w.saldo for w in self.sistema.listar_wallets())
-        self.sistema.transferir(self.alice_dir, self.bob_dir, 50.0)
+        self.sistema.transferir(self.alice_dir, self.bob_dir, 20.0)
         suma_fin = sum(w.saldo for w in self.sistema.listar_wallets())
         self.assertAlmostEqual(suma_ini, suma_fin, places=6)
 
