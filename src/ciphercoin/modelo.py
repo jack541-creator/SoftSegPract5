@@ -138,7 +138,6 @@ class Wallet:
     @icontract.require(lambda nombre: isinstance(nombre, str) and nombre.strip() != "", "El nombre no puede estar vacío")
     @icontract.require(lambda tipo: isinstance(tipo, TipoWallet), "El tipo de wallet no es válido")
     @icontract.ensure(lambda result: isinstance(result, str) and len(result) == 40, "La dirección debe tener 40 caracteres")
-
     def generar_direccion(nombre: str, tipo: TipoWallet) -> str:
         raw = f"{tipo.value}:{nombre}".encode("utf-8")
         return hashlib.sha256(raw).hexdigest()[:40]
@@ -149,31 +148,33 @@ class Wallet:
     @icontract.require(lambda saldo: isinstance(saldo, (int, float)) and saldo >= 0, "El saldo inicial no puede ser negativo")
     @icontract.ensure(lambda result: isinstance(result, Wallet), "Debe devolver una Wallet")
     def crear(cls, nombre: str, tipo: TipoWallet, saldo: float = 0.0) -> "Wallet":
-        
+        """Crea una wallet válida generando automáticamente la dirección"""
         direccion = cls.generar_direccion(nombre, tipo)
         return cls(direccion=direccion, nombre=nombre, tipo=tipo, saldo=saldo)
 
     @icontract.require(lambda cantidad: isinstance(cantidad, (int, float)) and cantidad > 0, "La cantidad a ingresar debe ser positiva")
     def ingresar(self, cantidad: float) -> None:
-       
+        """Se ingresan monedas en la cartera"""
         self.saldo = round(self.saldo + cantidad, 8)
 
     @icontract.require(lambda cantidad: isinstance(cantidad, (int, float)) and cantidad > 0, "La cantidad a retirar debe ser positiva")
     @icontract.ensure(lambda self: self.saldo >= 0, "El saldo no puede quedar negativo")
-    def retirar(self, cantidad: float) -> None:
-        
+    def retirar(self, cantidad: float) -> None:  
+        """ Se retira el saldo especificado de la cartera para realizar las acciones necesarias"""
         if self.saldo < cantidad:
             raise ErrorSaldoInsuficiente(f"Saldo insuficiente: disponible {self.saldo:.4f}, requerido {cantidad:.4f}")
-
         self.saldo = round(self.saldo - cantidad, 8)
 
     @icontract.require(lambda puntos: isinstance(puntos, int) and puntos > 0, "Los puntos de reputación deben ser positivos")
     def aumentar_reputacion(self, puntos: int = 1) -> None:
         self.reputacion += puntos
 
+    """En caso de haber penalizaciones se añadiría una función de restar reputación"""
+
     @icontract.require(lambda cantidad: isinstance(cantidad, (int, float)) and cantidad > 0, "La cantidad debe ser positiva")
     @icontract.ensure(lambda result: isinstance(result, bool), "Debe devolver un booleano")
     def puede_transferir(self, cantidad: float) -> bool:
+        """Confirma que se tenga el saldo suficiente para hacer la transferencia"""
         return self.saldo >= cantidad
 
     def es_estado(self) -> bool:
