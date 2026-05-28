@@ -1,4 +1,6 @@
 # La contraseña de prueba de los usuarios es "4nv=8GsOy94R" y la clave maestra del gestor de prueba es "claveMaestraSegura123!"
+from __future__ import annotations
+import functools
 import hashlib
 import json
 import time
@@ -230,7 +232,63 @@ class Blockchain:
                 return False
         return True
 
+def validar_transferencia(metodo):
+    @functools.wraps(metodo)
+    def wrapper(self, origen_dir, destino_dir, importe, *args, **kwargs):
+        # El importe tiene que ser un número positivo
+        if importe <= 0:
+            raise ErrorTransaccionInvalida(
+                "El importe debe ser mayor que 0, se recibio: {}".format(importe)
+            )
+        # Comprobamos que la wallet de origen existe en el sistema
+        if origen_dir not in self._wallets:
+            raise ErrorWalletNoEncontrada(
+                "Wallet origen no encontrada: {}".format(origen_dir)
+            )
+        # Comprobamos que la wallet de destino también existe
+        if destino_dir not in self._wallets:
+            raise ErrorWalletNoEncontrada(
+                "Wallet destino no encontrada: {}".format(destino_dir)
+            )
+        # No tiene sentido enviarte dinero a ti mismo
+        if origen_dir == destino_dir:
+            raise ErrorTransaccionInvalida(
+                "El origen y el destino no pueden ser la misma wallet"
+            )
+        # Todo correcto, dejamos pasar la llamada al método real
+        return metodo(self, origen_dir, destino_dir, importe, *args, **kwargs)
+    return wrapper
 
+
+def registrar_inicio_transferencia(metodo):
+    @functools.wraps(metodo)
+    def wrapper(self, origen_dir, destino_dir, importe, *args, **kwargs):
+        # Sacamos los nombres de las wallets para que el log sea legible
+        nombre_origen  = self._wallets[origen_dir].nombre if origen_dir in self._wallets else origen_dir
+        nombre_destino = self._wallets[destino_dir].nombre if destino_dir in self._wallets else destino_dir
+        # Anotamos en el log que se va a iniciar una transferencia
+        self._auditoria.registrar(
+            "TRANSFERENCIA_INICIADA",
+            "de={} | a={} | importe={:.4f}".format(nombre_origen, nombre_destino, importe)
+        )
+        # Ejecutamos la transferencia
+        return metodo(self, origen_dir, destino_dir, importe, *args, **kwargs)
+    return wrapper
+
+
+def verificar_integridad_post(metodo):
+    @functools.wraps(metodo)
+    def wrapper(self, *args, **kwargs):
+        # Primero dejamos que la transferencia se complete
+        resultado = metodo(self, *args, **kwargs)
+        # Luego comprobamos la integridad de la cadena de bloques
+        if not self._blockchain.es_integra():
+            self._auditoria.registrar(
+                "ALERTA_INTEGRIDAD",
+                "La blockchain ha perdido integridad tras la ultima transferencia"
+            )
+        return resultado
+    return wrapper
 # =========================================================
 # SISTEMA ciphercoin (Facade)
 # =========================================================
@@ -338,7 +396,9 @@ class SistemaCipherCoin:
     # Transferencia
     # ------------------------------------------------------------------
 
-    @icontract.require(lambda importe: importe > 0, "El importe debe ser positivo")
+    @verificar_integridad_post
+    @validar_transferencia
+    @registrar_inicio_transferencia
     def transferir(self, origen_dir: str, destino_dir: str, importe: float, token: str) -> Transaccion:
         """
         Ejecuta una transferencia entre dos wallets.
