@@ -100,7 +100,7 @@ python -m pytest
 | Strategy       | `EstrategiaComision` / `ComisionProgresiva` |
 | Facade         | `SistemaCipherCoin`                            |
 | Proxy          | `ProxySeguroGestorCredenciales` (original)     |
-| Factory Method | `Wallet.generar_direccion`                     |
+| Factory Method | `Wallet.crear`                     |
 | Observer (log) | `ServicioAuditoriaCripto`                      |
 
 ---
