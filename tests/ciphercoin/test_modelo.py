@@ -105,8 +105,10 @@ class TestComisionProgresiva(unittest.TestCase):
 
 class TestWallet(unittest.TestCase):
 
+    def setUp(self):
+        self.wallet = Wallet.crear("WalletTest", TipoWallet.USUARIO, 10.0)
+
     def test_generar_direccion_determinista(self):
-        """La misma entrada siempre produce la misma dirección."""
         d1 = Wallet.generar_direccion("Alice", TipoWallet.USUARIO)
         d2 = Wallet.generar_direccion("Alice", TipoWallet.USUARIO)
         self.assertEqual(d1, d2)
@@ -120,6 +122,39 @@ class TestWallet(unittest.TestCase):
         d = Wallet.generar_direccion("Test", TipoWallet.PYME)
         self.assertEqual(len(d), 40)
 
+    def test_crear_wallet_factory_method(self):
+        w = Wallet.crear("Factory", TipoWallet.USUARIO, 10.0)
+
+        self.assertEqual(w.nombre, "Factory")
+        self.assertEqual(w.tipo, TipoWallet.USUARIO)
+        self.assertEqual(w.saldo, 10.0)
+        self.assertEqual(w.reputacion, 0)
+        self.assertEqual(len(w.direccion), 40)
+
+    def test_crear_wallet_rechaza_datos_invalidos(self):
+        casos = [("", TipoWallet.USUARIO, 10.0), ("Nombre", "usuario", 10.0), ("Nombre", TipoWallet.USUARIO, -1.0)]
+
+        for nombre, tipo, saldo in casos:
+            with self.subTest(nombre=nombre, tipo=tipo, saldo=saldo):
+                with self.assertRaises(Exception):
+                    Wallet.crear(nombre, tipo, saldo)
+
+    def test_wallet_rechaza_estado_inicial_invalido(self):
+        direccion = Wallet.generar_direccion("Test", TipoWallet.USUARIO)
+
+        casos = [
+            {"direccion": "", "nombre": "Test", "tipo": TipoWallet.USUARIO, "saldo": 0.0, "reputacion": 0},
+            {"direccion": direccion, "nombre": "", "tipo": TipoWallet.USUARIO, "saldo": 0.0, "reputacion": 0},
+            {"direccion": direccion, "nombre": "Test", "tipo": "usuario", "saldo": 0.0, "reputacion": 0},
+            {"direccion": direccion, "nombre": "Test", "tipo": TipoWallet.USUARIO, "saldo": -1.0, "reputacion": 0},
+            {"direccion": direccion, "nombre": "Test", "tipo": TipoWallet.USUARIO, "saldo": 0.0, "reputacion": -1},
+        ]
+
+        for caso in casos:
+            with self.subTest(caso=caso):
+                with self.assertRaises(Exception):
+                    Wallet(**caso)
+
     def test_saldo_inicial_cero_por_defecto(self):
         d = Wallet.generar_direccion("X", TipoWallet.USUARIO)
         w = Wallet(direccion=d, nombre="X", tipo=TipoWallet.USUARIO)
@@ -129,6 +164,94 @@ class TestWallet(unittest.TestCase):
         d = Wallet.generar_direccion("Y", TipoWallet.USUARIO)
         w = Wallet(direccion=d, nombre="Y", tipo=TipoWallet.USUARIO)
         self.assertEqual(w.reputacion, 0)
+
+    def test_ingresar_aumenta_saldo(self):
+        self.wallet.ingresar(5.5)
+        self.assertEqual(self.wallet.saldo, 15.5)
+
+    def test_ingresar_rechaza_cantidades_invalidas(self):
+        for cantidad in [0, -1, "5"]:
+            with self.subTest(cantidad=cantidad):
+                with self.assertRaises(Exception):
+                    self.wallet.ingresar(cantidad)
+
+    def test_retirar_reduce_saldo(self):
+        self.wallet.retirar(7.5)
+        self.assertEqual(self.wallet.saldo, 2.5)
+
+    def test_retirar_rechaza_cantidades_invalidas(self):
+        for cantidad in [0, -1, "5"]:
+            with self.subTest(cantidad=cantidad):
+                with self.assertRaises(Exception):
+                    self.wallet.retirar(cantidad)
+
+    def test_retirar_saldo_insuficiente(self):
+        with self.assertRaises(ErrorSaldoInsuficiente):
+            self.wallet.retirar(20.0)
+
+    def test_puede_transferir_devuelve_booleano_correcto(self):
+        casos = [(5.0, True), (10.0, True), (10.01, False)]
+
+        for cantidad, esperado in casos:
+            with self.subTest(cantidad=cantidad):
+                self.assertEqual(self.wallet.puede_transferir(cantidad), esperado)
+
+    def test_puede_transferir_rechaza_cantidades_invalidas_por_contrato(self):
+        for cantidad in [0, -1, "5"]:
+            with self.subTest(cantidad=cantidad):
+                with self.assertRaises(Exception):
+                    self.wallet.puede_transferir(cantidad)
+
+    def test_aumentar_reputacion(self):
+        self.wallet.aumentar_reputacion()
+        self.assertEqual(self.wallet.reputacion, 1)
+
+        self.wallet.aumentar_reputacion(3)
+        self.assertEqual(self.wallet.reputacion, 4)
+
+    def test_aumentar_reputacion_rechaza_valores_invalidos(self):
+        for puntos in [0, -1, 1.5, "1"]:
+            with self.subTest(puntos=puntos):
+                with self.assertRaises(Exception):
+                    self.wallet.aumentar_reputacion(puntos)
+
+    def test_helpers_tipo_wallet(self):
+        casos = [(TipoWallet.ESTADO, True, False, False), (TipoWallet.USUARIO, False, True, False), (TipoWallet.PYME, False, False, True)]
+
+        for tipo, es_estado, es_usuario, es_pyme in casos:
+            with self.subTest(tipo=tipo):
+                w = Wallet.crear(f"Wallet {tipo.value}", tipo, 10.0)
+
+                self.assertEqual(w.es_estado(), es_estado)
+                self.assertEqual(w.es_usuario(), es_usuario)
+                self.assertEqual(w.es_pyme(), es_pyme)
+
+    def test_to_dict_devuelve_datos_correctos(self):
+        self.wallet.aumentar_reputacion(2)
+
+        datos = self.wallet.to_dict()
+
+        self.assertEqual(datos["direccion"], self.wallet.direccion)
+        self.assertEqual(datos["nombre"], "WalletTest")
+        self.assertEqual(datos["tipo"], "usuario")
+        self.assertEqual(datos["saldo"], 10.0)
+        self.assertEqual(datos["reputacion"], 2)
+
+    def test_wallets_con_misma_direccion_son_iguales(self):
+        direccion = Wallet.generar_direccion("Igual", TipoWallet.USUARIO)
+
+        w1 = Wallet(direccion=direccion, nombre="Igual", tipo=TipoWallet.USUARIO)
+        w2 = Wallet(direccion=direccion, nombre="Igual copia", tipo=TipoWallet.USUARIO)
+
+        self.assertEqual(w1, w2)
+        self.assertEqual(hash(w1), hash(w2))
+
+    def test_repr_contiene_datos_basicos(self):
+        texto = repr(self.wallet)
+
+        self.assertIn("WalletTest", texto)
+        self.assertIn("usuario", texto)
+        self.assertIn("10.0000", texto)
 
 
 # =========================================================
