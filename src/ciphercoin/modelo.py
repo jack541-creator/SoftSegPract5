@@ -110,31 +110,101 @@ class ComisionProgresiva(EstrategiaComision):
 @dataclass
 class Wallet:
 
-    direccion:  str # (hash SHA-256 del nombre+tipo)
+    direccion:  str
     nombre:     str
     tipo:       TipoWallet
     saldo:      float = 0.0
     reputacion: int   = 0
 
-    # ------------------------------------------------------------------
-    # fábrica de dirección determinista
-    # ------------------------------------------------------------------
+    def __post_init__(self):
+        if not isinstance(self.direccion, str) or self.direccion.strip() == "":
+            raise ErrorTransaccionInvalida("La dirección de la wallet no puede estar vacía")
+
+        if not isinstance(self.nombre, str) or self.nombre.strip() == "":
+            raise ErrorTransaccionInvalida("El nombre de la wallet no puede estar vacío")
+
+        if not isinstance(self.tipo, TipoWallet):
+            raise ErrorTransaccionInvalida("El tipo de wallet no es válido")
+
+        if not isinstance(self.saldo, (int, float)) or self.saldo < 0:
+            raise ErrorSaldoInsuficiente("El saldo inicial no puede ser negativo")
+
+        if not isinstance(self.reputacion, int) or self.reputacion < 0:
+            raise ErrorTransaccionInvalida("La reputación inicial no puede ser negativa")
+
+        self.saldo = round(float(self.saldo), 8)
 
     @staticmethod
+    @icontract.require(lambda nombre: isinstance(nombre, str) and nombre.strip() != "", "El nombre no puede estar vacío")
+    @icontract.require(lambda tipo: isinstance(tipo, TipoWallet), "El tipo de wallet no es válido")
+    @icontract.ensure(lambda result: isinstance(result, str) and len(result) == 40, "La dirección debe tener 40 caracteres")
+
     def generar_direccion(nombre: str, tipo: TipoWallet) -> str:
-        """Genera una dirección determinista a partir del nombre y tipo."""
         raw = f"{tipo.value}:{nombre}".encode("utf-8")
         return hashlib.sha256(raw).hexdigest()[:40]
 
-    # ------------------------------------------------------------------
-    #  Repr
-    # ------------------------------------------------------------------
+    @classmethod
+    @icontract.require(lambda nombre: isinstance(nombre, str) and nombre.strip() != "", "El nombre no puede estar vacío")
+    @icontract.require(lambda tipo: isinstance(tipo, TipoWallet), "El tipo de wallet no es válido")
+    @icontract.require(lambda saldo: isinstance(saldo, (int, float)) and saldo >= 0, "El saldo inicial no puede ser negativo")
+    @icontract.ensure(lambda result: isinstance(result, Wallet), "Debe devolver una Wallet")
+    def crear(cls, nombre: str, tipo: TipoWallet, saldo: float = 0.0) -> "Wallet":
+        
+        direccion = cls.generar_direccion(nombre, tipo)
+        return cls(direccion=direccion, nombre=nombre, tipo=tipo, saldo=saldo)
+
+    @icontract.require(lambda cantidad: isinstance(cantidad, (int, float)) and cantidad > 0, "La cantidad a ingresar debe ser positiva")
+    def ingresar(self, cantidad: float) -> None:
+       
+        self.saldo = round(self.saldo + cantidad, 8)
+
+    @icontract.require(lambda cantidad: isinstance(cantidad, (int, float)) and cantidad > 0, "La cantidad a retirar debe ser positiva")
+    @icontract.ensure(lambda self: self.saldo >= 0, "El saldo no puede quedar negativo")
+    def retirar(self, cantidad: float) -> None:
+        
+        if self.saldo < cantidad:
+            raise ErrorSaldoInsuficiente(f"Saldo insuficiente: disponible {self.saldo:.4f}, requerido {cantidad:.4f}")
+
+        self.saldo = round(self.saldo - cantidad, 8)
+
+    @icontract.require(lambda puntos: isinstance(puntos, int) and puntos > 0, "Los puntos de reputación deben ser positivos")
+    def aumentar_reputacion(self, puntos: int = 1) -> None:
+        self.reputacion += puntos
+
+    @icontract.require(lambda cantidad: isinstance(cantidad, (int, float)) and cantidad > 0, "La cantidad debe ser positiva")
+    @icontract.ensure(lambda result: isinstance(result, bool), "Debe devolver un booleano")
+    def puede_transferir(self, cantidad: float) -> bool:
+        return self.saldo >= cantidad
+
+    def es_estado(self) -> bool:
+        return self.tipo == TipoWallet.ESTADO
+
+    def es_usuario(self) -> bool:
+        return self.tipo == TipoWallet.USUARIO
+
+    def es_pyme(self) -> bool:
+        return self.tipo == TipoWallet.PYME
+
+    @icontract.ensure(lambda result: isinstance(result, dict), "Debe devolver un diccionario")
+    def to_dict(self) -> dict:
+        return {
+            "direccion": self.direccion,
+            "nombre": self.nombre,
+            "tipo": self.tipo.value,
+            "saldo": self.saldo,
+            "reputacion": self.reputacion,
+        }
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Wallet):
+            return NotImplemented
+        return self.direccion == other.direccion
+
+    def __hash__(self) -> int:
+        return hash(self.direccion)
 
     def __repr__(self) -> str:
-        return (
-                 f"Wallet({self.nombre!r}, tipo={self.tipo.value}, "
-                 f"saldo={self.saldo:.4f}, rep={self.reputacion})" )
-
+        return (f"Wallet({self.nombre!r}, tipo={self.tipo.value}, "f"saldo={self.saldo:.4f}, rep={self.reputacion})")
 # =========================================================
 #  TRANSACCIÓN
 # =========================================================
@@ -337,9 +407,9 @@ class SistemaCipherCoin:
             ("TechPyme S.L.",      TipoWallet.PYME,     50.0), ]
         for nombre, tipo, saldo_inicial in definiciones:
             direccion = Wallet.generar_direccion(nombre, tipo)
-            wallet = Wallet(direccion=direccion, nombre=nombre, tipo=tipo, saldo=saldo_inicial,)
-            self._wallets[direccion] = wallet
-            self._auditoria.registrar("WALLET_CREADA", f"{nombre} | tipo={tipo.value} | dir={direccion}")
+            wallet = Wallet.crear(nombre, tipo, saldo_inicial)
+            self._wallets[wallet.direccion] = wallet
+            self._auditoria.registrar("WALLET_CREADA", f"{nombre} | tipo={tipo.value} | dir={wallet.direccion}")
             self._gestor_credenciales.anadir_credencial("claveMaestraSegura123!", "Ciphercoin", direccion, "4nv=8GsOy94R")
 
     # ------------------------------------------------------------------
@@ -388,7 +458,7 @@ class SistemaCipherCoin:
     def wallet_estado(self) -> Wallet:
         """devuelve la wallet de estado del sistema."""
         for w in self._wallets.values():
-            if w.tipo == TipoWallet.ESTADO:
+            if w.es_estado():
                 return w
         raise ErrorWalletNoEncontrada("No hay wallet de estado configurada")
 
