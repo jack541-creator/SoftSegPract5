@@ -623,7 +623,7 @@ class GestorCredenciales:
         return token
     
     
-    def autenticacion_token(self, clave_maestra: str, servicio: str, usuario: str, token: str) -> bool:
+    def autenticar_token(self, clave_maestra: str, servicio: str, usuario: str, token: str) -> bool:
         
         self._autenticar(clave_maestra)
 

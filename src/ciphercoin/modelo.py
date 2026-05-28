@@ -12,7 +12,8 @@ from src.logger.access_control import ContextoSeguridad, RolUsuario
 
 
 from src.gestor_credenciales.gestor_credenciales import (
-    GestorCredenciales
+    GestorCredenciales,
+    ErrorAutenticacion
 )
 
 # =========================================================
@@ -284,7 +285,7 @@ class SistemaCipherCoin:
             self._gestor_credenciales.anadir_credencial("claveMaestraSegura123!", "Ciphercoin", direccion, "4nv=8GsOy94R")
 
     # ------------------------------------------------------------------
-    # Inicialización del gestor
+    # Gestor de credenciales
     # ------------------------------------------------------------------
 
     def _inicializacion_gestor(self, clave_maestra : str) -> None:
@@ -294,6 +295,15 @@ class SistemaCipherCoin:
             raise ErrorGestorYaInicializado
         else:
             self._gestor_credenciales = GestorCredenciales(clave_maestra)
+
+    # Valida la contraseña de una cartera y devuelve un token de acceso temporal
+    def iniciar_sesion(self, clave_maestra: str, direccion: str, password: str) -> str:
+        return self._gestor_credenciales.generar_token(clave_maestra, "Ciphercoin", direccion, password)
+    
+    # Devuelve true si el token es correcto para la dirección pasada
+    def autenticar_wallet(self, clave_maestra: str, direccion: str, token: str) -> bool:
+        return self._gestor_credenciales.autenticar_token(clave_maestra, "Ciphercoin", direccion, token)
+
         
 
     # ------------------------------------------------------------------
@@ -329,21 +339,27 @@ class SistemaCipherCoin:
     # ------------------------------------------------------------------
 
     @icontract.require(lambda importe: importe > 0, "El importe debe ser positivo")
-    def transferir(self, origen_dir: str, destino_dir: str, importe: float,) -> Transaccion:
+    def transferir(self, origen_dir: str, destino_dir: str, importe: float, token: str) -> Transaccion:
         """
         Ejecuta una transferencia entre dos wallets.
 
         Flujo:
           1. Validar existencia de wallets y fondos.
-          2. Calcular comisión según estrategia activa y reputación del remitente.
-          3. Descontar (importe + comisión) del origen.
-          4. Acreditar importe en el destino.
-          5. Acreditar comisión en la wallet de estado.
-          6. Actualizar reputación del remitente si el destino es PYME.
-          7. Registrar en blockchain y auditoría.
+          2. Autentica el token de la wallet que realiza la transferencia.
+          3. Calcular comisión según estrategia activa y reputación del remitente.
+          4. Descontar (importe + comisión) del origen.
+          5. Acreditar importe en el destino.
+          6. Acreditar comisión en la wallet de estado.
+          7. Actualizar reputación del remitente si el destino es PYME.
+          8. Registrar en blockchain y auditoría.
         """
+
         origen  = self._obtener_wallet_validada(origen_dir)
         destino = self._obtener_wallet_validada(destino_dir)
+
+        if not self.autenticar_wallet("claveMaestraSegura123!", origen_dir, token):
+            raise ErrorAutenticacion
+
 
         # calcular comisión
         comision = self._comision.calcular(importe, origen.reputacion)
