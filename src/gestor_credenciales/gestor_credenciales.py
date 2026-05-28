@@ -345,9 +345,6 @@ class GestorCredenciales:
 
         return self._credenciales[servicio][usuario]["hash"]
 
-    def obtener_password(self, clave_maestra: str, servicio: str, usuario: str) -> bytes:
-        return self.obtener_hash_password(clave_maestra, servicio, usuario)
-
     # =====================================================
     #  Cambiar password
     # =====================================================
