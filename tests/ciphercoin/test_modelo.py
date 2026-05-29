@@ -583,11 +583,13 @@ class GuiTestCase(unittest.TestCase):
 
     def setUp(self):
         self.root = tk.Tk()
-        self.root.withdraw()       # no mostrar la ventana durante los tests
-        self.app  = _app_mock(self.root)
+        self.root.withdraw()
+        self.root.update_idletasks()
+        self.app = _app_mock(self.root)
 
     def tearDown(self):
         try:
+            self.root.update_idletasks()
             self.root.destroy()
         except tk.TclError:
             pass
@@ -680,7 +682,13 @@ class TestVentanaTransferencia(GuiTestCase):
 
         sesion    = _sesion_mock(wallet=origen)
         dashboard = MagicMock()
-        ven = VentanaTransferencia(self.app, sesion, dashboard)
+
+        with patch.object(VentanaTransferencia, "_grab_and_center", lambda self: None):
+            ven = VentanaTransferencia(self.app, sesion, dashboard)
+
+        ven.withdraw()
+        self.root.update_idletasks()
+
         return ven, dashboard
 
     def test_transferencia_exitosa_llama_refrescar(self):
@@ -694,7 +702,7 @@ class TestVentanaTransferencia(GuiTestCase):
         self.app.sistema.transferir.return_value = tx_mock
 
         ven._campo_importe.var.set("10")
-        with patch("tkinter.messagebox.showinfo"):   # silenciamos el popup
+        with patch("src.ciphercoin.gui.messagebox.showinfo"):
             ven._confirmar()
 
         dashboard.refrescar.assert_called_once()
@@ -723,8 +731,11 @@ class TestVentanaHistorial(GuiTestCase):
 
         sesion = _sesion_mock(wallet=wallet)
 
-        ven = VentanaHistorial(self.app, sesion)
+        with patch.object(VentanaHistorial, "_grab_and_center", lambda self: None):
+            ven = VentanaHistorial(self.app, sesion)
+
         ven.withdraw()
+        self.root.update_idletasks()
 
         return ven
 
