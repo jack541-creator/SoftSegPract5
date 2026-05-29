@@ -4,28 +4,24 @@ import unittest
 import warnings
 import glob
 
-warnings.filterwarnings("ignore", category=ResourceWarning)
-
-os.environ['TEST_MODE'] = '1'
-
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-
 from src.gestor_credenciales.gestor_credenciales import (
     GestorCredenciales,
     ErrorAutenticacion,
     ErrorCredencialExistente,
-    ErrorServicioNoEncontrado,
     ErrorPoliticaPassword,
     ValidadorPassword,
-    PoliticaPassword,
 )
 from src.gestor_credenciales.proxy_seguro import (
     ErrorAutorizacion,
     ProxySeguroGestorCredenciales,
 )
 from src.logger.access_control import ContextoSeguridad, RolUsuario
-import bcrypt
-import pytest
+
+warnings.filterwarnings("ignore", category=ResourceWarning)
+
+os.environ['TEST_MODE'] = '1'
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 
 # Limpiar todos los logs antes de empezar

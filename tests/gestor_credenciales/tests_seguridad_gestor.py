@@ -1,13 +1,14 @@
 import unittest
-import os, sys
-
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.insert(0, PROJECT_ROOT)
+import os
+import sys
 
 from src.gestor_credenciales.gestor_credenciales import GestorCredenciales, ErrorPoliticaPassword, ErrorAutenticacion
 from src.logger.access_control import ContextoSeguridad, RolUsuario
 from hypothesis import given, settings
 from hypothesis.strategies import text
+
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, PROJECT_ROOT)
 
 
 class TestSeguridadGestorCredenciales(unittest.TestCase):

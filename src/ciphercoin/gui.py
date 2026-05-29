@@ -12,7 +12,6 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk, messagebox
 from typing import Optional
-import threading
 from src.ciphercoin.modelo import (SistemaCipherCoin,TipoWallet,ErrorSaldoInsuficiente,ErrorWalletNoEncontrada,ErrorTransaccionInvalida)
 from ciphercoin.autenticacion import (ServicioAutenticacion,Sesionciphercoin,ErrorSesionciphercoin)
 from src.logger.access_control import ContextoSeguridad, RolUsuario
@@ -455,7 +454,12 @@ class VentanaTransferencia(tk.Toplevel):
             return
 
         try:
-            tx = self._app.sistema.transferir(self._sesion.wallet.direccion,destino.direccion,importe)
+            tx = self._app.sistema.transferir(
+                self._sesion.wallet.direccion,
+                destino.direccion,
+                importe,
+                self._sesion.token
+            )  
             self._dashboard.refrescar()
             messagebox.showinfo(
                 "Transferencia completada",

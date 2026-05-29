@@ -11,15 +11,13 @@ from typing import Optional
 from src.gestor_credenciales.gestor_credenciales import (
     GestorCredenciales,
     ErrorCredencialExistente,
-    ErrorPoliticaPassword,
 )
 from src.gestor_credenciales.proxy_seguro import (
     ProxySeguroGestorCredenciales,
     Sesion,
     ErrorAutenticacion,   # viene del proxy_seguro, no del gestor
-    ErrorAutorizacion,
 )
-from src.ciphercoin.modelo import SistemaCipherCoin, TipoWallet, Wallet
+from src.ciphercoin.modelo import SistemaCipherCoin, Wallet
 
 
 # =========================================================
