@@ -381,16 +381,9 @@ class SistemaCipherCoin:
         self._auditoria: ServicioAuditoriaCripto = (auditoria or AuditoriaArchivoLog())
         self._blockchain = Blockchain()
         self._wallets: dict[str, Wallet] = {}
-        self._gestor_credenciales = None
-        self._ctx = ContextoSeguridad()
 
-        self._ctx.iniciar_sesion(
-        usuario="admin",
-        rol=RolUsuario.ADMIN
-        )
 
         # inicializar las 4 wallets predefinidas
-        self._inicializacion_gestor("claveMaestraSegura123!")
         self._inicializar_wallets()
         
 
@@ -410,27 +403,6 @@ class SistemaCipherCoin:
             wallet = Wallet.crear(nombre, tipo, saldo_inicial)
             self._wallets[wallet.direccion] = wallet
             self._auditoria.registrar("WALLET_CREADA", f"{nombre} | tipo={tipo.value} | dir={wallet.direccion}")
-            self._gestor_credenciales.anadir_credencial("claveMaestraSegura123!", "Ciphercoin", direccion, "4nv=8GsOy94R")
-
-    # ------------------------------------------------------------------
-    # Gestor de credenciales
-    # ------------------------------------------------------------------
-
-    def _inicializacion_gestor(self, clave_maestra : str) -> None:
-
-        # Comprueba que el gestor no esté creado
-        if isinstance(self._gestor_credenciales, GestorCredenciales):
-            raise ErrorGestorYaInicializado
-        else:
-            self._gestor_credenciales = GestorCredenciales(clave_maestra)
-
-    # Valida la contraseña de una cartera y devuelve un token de acceso temporal
-    def iniciar_sesion(self, clave_maestra: str, direccion: str, password: str) -> str:
-        return self._gestor_credenciales.generar_token(clave_maestra, "Ciphercoin", direccion, password)
-    
-    # Devuelve true si el token es correcto para la dirección pasada
-    def autenticar_wallet(self, clave_maestra: str, direccion: str, token: str) -> bool:
-        return self._gestor_credenciales.autenticar_token(clave_maestra, "Ciphercoin", direccion, token)
 
         
 
@@ -469,26 +441,23 @@ class SistemaCipherCoin:
     @verificar_integridad_post
     @validar_transferencia
     @registrar_inicio_transferencia
-    def transferir(self, origen_dir: str, destino_dir: str, importe: float, token: str) -> Transaccion:
+    def transferir(self, origen_dir: str, destino_dir: str, importe: float) -> Transaccion:
         """
         Ejecuta una transferencia entre dos wallets.
 
         Flujo:
           1. Validar existencia de wallets y fondos.
-          2. Autentica el token de la wallet que realiza la transferencia.
-          3. Calcular comisión según estrategia activa y reputación del remitente.
-          4. Descontar (importe + comisión) del origen.
-          5. Acreditar importe en el destino.
-          6. Acreditar comisión en la wallet de estado.
-          7. Actualizar reputación del remitente si el destino es PYME.
-          8. Registrar en blockchain y auditoría.
+          2. Calcular comisión según estrategia activa y reputación del remitente.
+          3. Descontar (importe + comisión) del origen.
+          4. Acreditar importe en el destino.
+          5. Acreditar comisión en la wallet de estado.
+          6. Actualizar reputación del remitente si el destino es PYME.
+          7. Registrar en blockchain y auditoría.
         """
 
         origen  = self._obtener_wallet_validada(origen_dir)
         destino = self._obtener_wallet_validada(destino_dir)
 
-        if not self.autenticar_wallet("claveMaestraSegura123!", origen_dir, token):
-            raise ErrorAutenticacion
 
 
         # calcular comisión

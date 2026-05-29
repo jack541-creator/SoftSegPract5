@@ -457,8 +457,7 @@ class VentanaTransferencia(tk.Toplevel):
             tx = self._app.sistema.transferir(
                 self._sesion.wallet.direccion,
                 destino.direccion,
-                importe,
-                self._sesion.token
+                importe
             )  
             self._dashboard.refrescar()
             messagebox.showinfo(

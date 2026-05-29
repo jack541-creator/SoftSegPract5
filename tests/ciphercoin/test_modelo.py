@@ -338,33 +338,6 @@ class TestSistemaCipherCoinWallets(unittest.TestCase):
 
 
 # =========================================================
-# TESTS: SistemaCipherCoin — gestor de credenciales
-# =========================================================
-
-class TestGestorCredenciales(unittest.TestCase):
-
-    def setUp(self):
-
-        self.sistema = SistemaCipherCoin(
-            auditoria=AuditoriaArchivoLog(os.devnull)
-        )
-
-        self.alice_dir    = self.sistema.direccion_por_nombre("Alice (Usuario)")
-        self.master_key   = "claveMaestraSegura123!"
-        self.password     = "4nv=8GsOy94R"
-
-    def test_inicio_sesion(self):
-        self.assertIsInstance(self.sistema.iniciar_sesion(self.master_key, self.alice_dir, self.password), str)
-
-    def test_autenticacion(self):
-        token = self.sistema.iniciar_sesion(self.master_key, self.alice_dir, self.password)
-        self.assertTrue(self.sistema.autenticar_wallet(self.master_key, self.alice_dir, token))
-
-    def test_autenticacion_fallida(self):
-        token = self.sistema.iniciar_sesion(self.master_key, self.alice_dir, self.password)
-        self.assertFalse(self.sistema.autenticar_wallet(self.master_key, self.alice_dir, "AAAA"))
-
-# =========================================================
 # TESTS: SistemaCipherCoin — transferencias
 # =========================================================
 
@@ -379,9 +352,6 @@ class TestTransferencias(unittest.TestCase):
         self.pyme_dir     = self.sistema.direccion_por_nombre("TechPyme S.L.")
         self.estado_dir   = self.sistema.wallet_estado().direccion
 
-        self.master_key   = "claveMaestraSegura123!"
-        self.password     = "4nv=8GsOy94R"
-        self.alice_token  = self.sistema.iniciar_sesion(self.master_key, self.alice_dir, self.password)
 
     def test_transferencia_usuario_a_usuario_correcta(self):
         alice = self.sistema.obtener_wallet(self.alice_dir)
@@ -389,7 +359,7 @@ class TestTransferencias(unittest.TestCase):
         saldo_alice_ini = alice.saldo
         saldo_bob_ini   = bob.saldo
 
-        tx = self.sistema.transferir(self.alice_dir, self.bob_dir, 10.0, self.alice_token)
+        tx = self.sistema.transferir(self.alice_dir, self.bob_dir, 10.0)
 
         self.assertEqual(tx.importe, 10.0)
         self.assertGreater(tx.comision, 0)
@@ -400,7 +370,7 @@ class TestTransferencias(unittest.TestCase):
         estado = self.sistema.obtener_wallet(self.estado_dir)
         saldo_estado_ini = estado.saldo
 
-        tx = self.sistema.transferir(self.alice_dir, self.bob_dir, 10.0, self.alice_token)
+        tx = self.sistema.transferir(self.alice_dir, self.bob_dir, 10.0)
 
         self.assertAlmostEqual(estado.saldo, saldo_estado_ini + tx.comision, places=6)
 
@@ -408,7 +378,7 @@ class TestTransferencias(unittest.TestCase):
         alice = self.sistema.obtener_wallet(self.alice_dir)
         rep_ini = alice.reputacion
 
-        self.sistema.transferir(self.alice_dir, self.pyme_dir, 5.0, self.alice_token)
+        self.sistema.transferir(self.alice_dir, self.pyme_dir, 5.0)
 
         self.assertEqual(alice.reputacion, rep_ini + 1)
 
@@ -416,7 +386,7 @@ class TestTransferencias(unittest.TestCase):
         alice = self.sistema.obtener_wallet(self.alice_dir)
         rep_ini = alice.reputacion
 
-        self.sistema.transferir(self.alice_dir, self.bob_dir, 5.0, self.alice_token)
+        self.sistema.transferir(self.alice_dir, self.bob_dir, 5.0)
 
         self.assertEqual(alice.reputacion, rep_ini)
 
@@ -424,58 +394,55 @@ class TestTransferencias(unittest.TestCase):
         alice = self.sistema.obtener_wallet(self.alice_dir)
 
         # Primera transferencia (rep=0)
-        tx1 = self.sistema.transferir(self.alice_dir, self.pyme_dir, 10.0, self.alice_token)
+        tx1 = self.sistema.transferir(self.alice_dir, self.pyme_dir, 10.0)
         com1 = tx1.comision   # rep=0 → 5%
 
         # Aumentar reputación manualmente para aislar el efecto
         alice.reputacion = 10
-        tx2 = self.sistema.transferir(self.alice_dir, self.pyme_dir, 10.0, self.alice_token)
+        tx2 = self.sistema.transferir(self.alice_dir, self.pyme_dir, 10.0)
         com2 = tx2.comision   # rep=10 → 4%
 
         self.assertLess(com2, com1)
 
     def test_saldo_insuficiente_lanza_error(self):
         with self.assertRaises(ErrorSaldoInsuficiente):
-            self.sistema.transferir(self.alice_dir, self.bob_dir, 999_999.0, self.alice_token)
+            self.sistema.transferir(self.alice_dir, self.bob_dir, 999_999.0)
 
     def test_importe_cero_lanza_error(self):
         with self.assertRaises(Exception):
-            self.sistema.transferir(self.alice_dir, self.bob_dir, 0.0, self.alice_token)
+            self.sistema.transferir(self.alice_dir, self.bob_dir, 0.0)
 
     def test_importe_negativo_lanza_error(self):
         with self.assertRaises(Exception):
-            self.sistema.transferir(self.alice_dir, self.bob_dir, -5.0, self.alice_token)
+            self.sistema.transferir(self.alice_dir, self.bob_dir, -5.0)
 
     def test_wallet_origen_inexistente_lanza_error(self):
         with self.assertRaises(ErrorWalletNoEncontrada):
-            self.sistema.transferir("falso", self.bob_dir, 5.0, self.alice_token)
+            self.sistema.transferir("falso", self.bob_dir, 5.0)
 
     def test_wallet_destino_inexistente_lanza_error(self):
         with self.assertRaises(ErrorWalletNoEncontrada):
-            self.sistema.transferir(self.alice_dir, "falso", 5.0, self.alice_token)
+            self.sistema.transferir(self.alice_dir, "falso", 5.0)
 
     def test_historial_registra_transacciones(self):
-        self.sistema.transferir(self.alice_dir, self.bob_dir, 3.0, self.alice_token)
-        self.sistema.transferir(self.alice_dir, self.pyme_dir, 2.0, self.alice_token)
+        self.sistema.transferir(self.alice_dir, self.bob_dir, 3.0)
+        self.sistema.transferir(self.alice_dir, self.pyme_dir, 2.0)
 
         hist = self.sistema.historial_wallet(self.alice_dir)
         self.assertEqual(len(hist), 2)
 
     def test_integridad_blockchain_tras_multiples_txs(self):
         for _ in range(5):
-            self.sistema.transferir(self.alice_dir, self.bob_dir, 1.0, self.alice_token)
+            self.sistema.transferir(self.alice_dir, self.bob_dir, 1.0)
         self.assertTrue(self.sistema.verificar_integridad())
 
     def test_conservacion_de_valor_total(self):
         """La suma total de saldos debe conservarse (comisión redistribuida)."""
         suma_ini = sum(w.saldo for w in self.sistema.listar_wallets())
-        self.sistema.transferir(self.alice_dir, self.bob_dir, 20.0, self.alice_token)
+        self.sistema.transferir(self.alice_dir, self.bob_dir, 20.0)
         suma_fin = sum(w.saldo for w in self.sistema.listar_wallets())
         self.assertAlmostEqual(suma_ini, suma_fin, places=6)
 
-    def test_token_incorrecto(self):
-        with self.assertRaises(ErrorAutenticacion):
-            self.sistema.transferir(self.alice_dir, self.bob_dir, 20.0, "ÑLASJ")
 
 
 # =========================================================
