@@ -533,7 +533,7 @@ class TestAutenticacion(unittest.TestCase):
 import tkinter as tk
 from unittest.mock import MagicMock, patch, PropertyMock
 from src.ciphercoin.modelo import TipoWallet
-from src.ciphercoin.gui import DashboardFrame, VentanaTransferencia, VentanaHistorial
+from src.ciphercoin.gui import DashboardFrame, VentanaTransferencia, VentanaHistorial, LoginFrame
 
 # helpers de mock
 
@@ -605,7 +605,6 @@ class TestLoginFrame(GuiTestCase):
     """Pruebas sobre la interfaz de login."""
 
     def _make_frame(self):
-        from gui_ciphercoin import LoginFrame
         return LoginFrame(self.app)
 
     def test_campos_vacios_muestran_error(self):
@@ -628,7 +627,6 @@ class TestLoginFrame(GuiTestCase):
 
     def test_credenciales_incorrectas_muestran_error(self):
         """si auth.login lanza ErrorSesionCiphercoin se muestra el mensaje."""
-        from ciphercoin.autenticacion import ErrorSesionciphercoin
         frame = self._make_frame()
         self.app.auth.login.side_effect = ErrorSesionciphercoin("Credenciales inválidas")
 
@@ -682,7 +680,6 @@ class TestVentanaTransferencia(GuiTestCase):
     """Pruebas sobre el formulario de transferencia."""
 
     def _make_ventana(self):
-        from gui_ciphercoin import VentanaTransferencia, DashboardFrame
         origen  = _wallet_mock("Origen", "usuario", 100.0, "ADDR_ORI")
         destino = _wallet_mock("Destino", "pyme",  200.0, "ADDR_DST")
         self.app.sistema.listar_wallets.return_value = [origen, destino]
@@ -694,7 +691,6 @@ class TestVentanaTransferencia(GuiTestCase):
 
     def test_transferencia_exitosa_llama_refrescar(self):
         """Una transferencia válida debe llamar a dashboard.refrescar()."""
-        from src.ciphercoin.modelo import ErrorSaldoInsuficiente
         ven, dashboard = self._make_ventana()
 
         tx_mock = MagicMock()
@@ -727,7 +723,6 @@ class TestVentanaHistorial(GuiTestCase):
     """Pruebas sobre la ventana de historial de transacciones."""
 
     def _make_ventana(self, txs=None):
-        from gui_ciphercoin import VentanaHistorial
         wallet = _wallet_mock(direccion="ADDR_ALICE")
         self.app.sistema.historial_wallet.return_value = txs or []
         # obtener_wallet se usa para resolver nombres de contraparte
