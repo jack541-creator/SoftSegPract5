@@ -525,6 +525,238 @@ class TestAutenticacion(unittest.TestCase):
         from src.ciphercoin.modelo import TipoWallet
         self.assertEqual(sesion.wallet.tipo, TipoWallet.ESTADO)
 
+# ---------------------------------------------------------------------------
+#  TESTS PARA LA GUI E INTERFAZ DE LOGIN
+# ---------------------------------------------------------------------------
+
+import tkinter as tk
+from unittest.mock import MagicMock, patch, PropertyMock
+from src.ciphercoin.modelo import TipoWallet
+from gui_ciphercoin import DashboardFrame, VentanaTransferencia, VentanaHistorial
+
+# helpers de mock
+
+def _wallet_mock(nombre="Wallet Test", tipo_val="usuario", saldo=10.0, direccion="ADDR_TEST_001", reputacion=5):
+    """Devuelve un wallet mock con los atributos mínimos necesarios."""
+    tipo_map = {
+        "usuario": TipoWallet.USUARIO,
+        "pyme":    TipoWallet.PYME,
+        "estado":  TipoWallet.ESTADO, }
+    w = MagicMock()
+    w.nombre     = nombre
+    w.tipo       = tipo_map[tipo_val]
+    w.saldo      = saldo
+    w.direccion  = direccion
+    w.reputacion = reputacion
+    return w
+
+def _sesion_mock(wallet=None):
+    sesion = MagicMock()
+    sesion.wallet = wallet or _wallet_mock()
+    return sesion
+
+def _app_mock(root: tk.Tk):
+    """objeto app simulado que hereda de tk.Tk pero con sistema y auth mockeados"""
+
+    app = root                        # reutilizamos la Tk raíz
+    app.sistema  = MagicMock()
+    app.auth     = MagicMock()
+
+    # listar_wallets devuelve dos wallets de ejemplo
+    w1 = _wallet_mock("Alice",  "usuario", 50.0,  "ADDR_ALICE")
+    w2 = _wallet_mock("BizCo", "pyme",    200.0, "ADDR_BIZCO")
+    app.sistema.listar_wallets.return_value = [w1, w2]
+    app.sistema.historial_wallet.return_value = []
+    app.sistema.historial_completo.return_value = []
+    app.sistema.verificar_integridad.return_value = True
+
+    comision_mock = MagicMock()
+    comision_mock.calcular.return_value = 0.01
+    app.sistema._comision = comision_mock
+
+    # poner mostrar_login / mostrar_dashboard a no-ops en los tests
+    app.mostrar_login     = MagicMock()
+    app.mostrar_dashboard = MagicMock()
+    return app
+
+# ---------------------------------------------------------------------------
+#  TESTS
+# ---------------------------------------------------------------------------
+
+class GuiTestCase(unittest.TestCase):
+    """crea y destruye una Tk raíz para cada test."""
+
+    def setUp(self):
+        self.root = tk.Tk()
+        self.root.withdraw()       # no mostrar la ventana durante los tests
+        self.app  = _app_mock(self.root)
+
+    def tearDown(self):
+        try:
+            self.root.destroy()
+        except tk.TclError:
+            pass
+
+
+#  loginframe
+
+class TestLoginFrame(GuiTestCase):
+    """Pruebas sobre la interfaz de login."""
+
+    def _make_frame(self):
+        from gui_ciphercoin import LoginFrame
+        return LoginFrame(self.app)
+
+    def test_campos_vacios_muestran_error(self):
+        """si se pulsa 'Enter' sin rellenar nada, aparece el mensaje de error."""
+        frame = self._make_frame()
+        frame._login()
+        self.assertNotEqual(frame._lbl_error.cget("text"), "")
+
+    def test_login_exitoso_llama_mostrar_dashboard(self):
+        """login correcto debe llamar a mostrar_dashboard con la sesión."""
+        frame = self._make_frame()
+        sesion = _sesion_mock()
+        self.app.auth.login.return_value = sesion
+
+        frame._campo_usuario.var.set("alice")
+        frame._campo_password.var.set("1234")
+        frame._login()
+
+        self.app.mostrar_dashboard.assert_called_once_with(sesion)
+
+    def test_credenciales_incorrectas_muestran_error(self):
+        """si auth.login lanza ErrorSesionCiphercoin se muestra el mensaje."""
+        from ciphercoin.autenticacion import ErrorSesionciphercoin
+        frame = self._make_frame()
+        self.app.auth.login.side_effect = ErrorSesionciphercoin("Credenciales inválidas")
+
+        frame._campo_usuario.var.set("unknown")
+        frame._campo_password.var.set("wrong")
+        frame._login()
+
+        self.assertIn("Credenciales", frame._lbl_error.cget("text"))
+
+# dashboard
+
+class TestDashboardFrame(GuiTestCase):
+    """Pruebas sobre el panel principal."""
+
+    def _make_dashboard(self, tipo="usuario"):
+        w = _wallet_mock(tipo_val=tipo, saldo=42.5, reputacion=7)
+        sesion = _sesion_mock(wallet=w)
+        return DashboardFrame(self.app, sesion)
+
+    def test_saldo_se_muestra_correctamente(self):
+        """saldo debe reflejar el saldo del wallet."""
+        dash = self._make_dashboard()
+        self.assertIn("42.5", dash._var_saldo.get())
+
+    def test_reputacion_visible_solo_para_usuario(self):
+        """_var_rep solo existe en wallets de tipo USUARIO."""
+        dash_usuario = self._make_dashboard("usuario")
+        self.assertTrue(hasattr(dash_usuario, "_var_rep"))
+        dash_pyme = self._make_dashboard("pyme")
+        self.assertFalse(hasattr(dash_pyme, "_var_rep"))
+
+    def test_refrescar_actualiza_saldo(self):
+        """refrescar() debe actualizar _var_saldo con el nuevo saldo."""
+        dash = self._make_dashboard()
+        dash._sesion.wallet.saldo = 99.9999
+        dash.refrescar()
+        self.assertIn("99.9999", dash._var_saldo.get())
+
+    def test_boton_admin_solo_wallet_estado(self):
+        """botón 'Panel Admin' solo se crea para wallets de tipo ESTADO"""
+        w_estado = _wallet_mock(tipo_val="estado", direccion="ADDR_ESTADO")
+        # listar_wallets no debe devolver el mismo wallet como destino
+        self.app.sistema.listar_wallets.return_value = [_wallet_mock("Otro", "usuario", 10.0, "ADDR_OTRO")]
+        sesion = _sesion_mock(wallet=w_estado)
+        dash = DashboardFrame(self.app, sesion)   # no debe lanzar excepción
+        self.assertTrue(callable(dash._abrir_admin))
+
+# ventana transferencia
+
+class TestVentanaTransferencia(GuiTestCase):
+    """Pruebas sobre el formulario de transferencia."""
+
+    def _make_ventana(self):
+        from gui_ciphercoin import VentanaTransferencia, DashboardFrame
+        origen  = _wallet_mock("Origen", "usuario", 100.0, "ADDR_ORI")
+        destino = _wallet_mock("Destino", "pyme",  200.0, "ADDR_DST")
+        self.app.sistema.listar_wallets.return_value = [origen, destino]
+
+        sesion    = _sesion_mock(wallet=origen)
+        dashboard = MagicMock()
+        ven = VentanaTransferencia(self.app, sesion, dashboard)
+        return ven, dashboard
+
+    def test_transferencia_exitosa_llama_refrescar(self):
+        """Una transferencia válida debe llamar a dashboard.refrescar()."""
+        from src.ciphercoin.modelo import ErrorSaldoInsuficiente
+        ven, dashboard = self._make_ventana()
+
+        tx_mock = MagicMock()
+        tx_mock.importe  = 10.0
+        tx_mock.comision = 0.01
+        tx_mock.tx_id    = "ABCDEF1234567890ABCDEF"
+        self.app.sistema.transferir.return_value = tx_mock
+
+        ven._campo_importe.var.set("10")
+        with patch("tkinter.messagebox.showinfo"):   # silenciamos el popup
+            ven._confirmar()
+
+        dashboard.refrescar.assert_called_once()
+
+    def test_saldo_insuficiente_muestra_error(self):
+        """ErrorSaldoInsuficiente debe reflejarse en el label de error."""
+        from src.ciphercoin.modelo import ErrorSaldoInsuficiente
+        ven, _ = self._make_ventana()
+        self.app.sistema.transferir.side_effect = ErrorSaldoInsuficiente("Saldo insuficiente")
+
+        ven._campo_importe.var.set("9999")
+        ven._confirmar()
+
+        self.assertIn("Saldo", ven._lbl_error.cget("text"))
+
+
+#  ventana historial
+
+class TestVentanaHistorial(GuiTestCase):
+    """Pruebas sobre la ventana de historial de transacciones."""
+
+    def _make_ventana(self, txs=None):
+        from gui_ciphercoin import VentanaHistorial
+        wallet = _wallet_mock(direccion="ADDR_ALICE")
+        self.app.sistema.historial_wallet.return_value = txs or []
+        # obtener_wallet se usa para resolver nombres de contraparte
+        self.app.sistema.obtener_wallet.return_value = _wallet_mock("Contraparte")
+        sesion = _sesion_mock(wallet=wallet)
+        return VentanaHistorial(self.app, sesion)
+
+    def test_historial_vacio_no_lanza_excepcion(self):
+        """con historial vacío la ventana debe construirse sin errores."""
+        ven = self._make_ventana(txs=[])
+        self.assertIsNotNone(ven)
+
+    def test_filas_se_insertan_correctamente(self):
+        """cada transacción genera exactamente una fila en la tabla."""
+        txs = [
+            {"tx_id": "TX001", "origen": "ADDR_ALICE", "destino": "ADDR_OTRO",
+             "importe": 1.0, "comision": 0.01, "timestamp": "2024-01-15T10:30:00Z"},
+            {"tx_id": "TX002", "origen": "ADDR_OTRO", "destino": "ADDR_ALICE",
+             "importe": 2.5, "comision": 0.02, "timestamp": "2024-01-16T11:00:00Z"},]
+        ven = self._make_ventana(txs=txs)
+        # buscamos el Treeview dentro de la ventana
+        tabla = None
+        from tkinter import ttk
+        for widget in ven.winfo_children():
+            for child in widget.winfo_children():
+                if isinstance(child, ttk.Treeview):
+                    tabla = child
+                    break
+        self.assertIsNotNone(tabla, "No se encontró el Treeview en VentanaHistorial")
+        self.assertEqual(len(tabla.get_children()), 2)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
