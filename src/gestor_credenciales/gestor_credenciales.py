@@ -228,7 +228,7 @@ class GestorCredenciales:
         # inicializar logging seguro
         self.log_file = log_file
         configure_logging(log_file)
-        inicializar_log()
+        inicializar_log(log_file)
         # verificar integridad del log al iniciar
         if not existe_archivo(log_file) or archivo_vacio(log_file):
             # no debería entrar aquí porque cada vez que se inicia no está vacío
