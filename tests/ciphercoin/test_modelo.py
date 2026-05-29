@@ -5,6 +5,12 @@ import sys
 from src.ciphercoin.modelo import (SistemaCipherCoin, ComisionProgresiva, TipoWallet, Wallet, Transaccion, Blockchain, 
                                    ErrorSaldoInsuficiente, ErrorWalletNoEncontrada, AuditoriaArchivoLog, ErrorAutenticacion )
 from src.logger.access_control import ContextoSeguridad, RolUsuario
+from src.ciphercoin.autenticacion import ServicioAutenticacion, ErrorSesionciphercoin
+import tkinter as tk
+from unittest.mock import MagicMock, patch
+from src.ciphercoin.gui import DashboardFrame, VentanaTransferencia, VentanaHistorial, LoginFrame
+from datetime import datetime, UTC
+from tkinter import ttk
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, PROJECT_ROOT)
@@ -252,7 +258,6 @@ class TestWallet(unittest.TestCase):
 class TestBlockchain(unittest.TestCase):
 
     def _tx(self, importe=1.0) -> Transaccion:
-        from datetime import datetime, UTC
         return Transaccion(
             origen="aaa",
             destino="bbb",
@@ -292,7 +297,6 @@ class TestSistemaCipherCoinWallets(unittest.TestCase):
 
     def setUp(self):
         # AuditoriaArchivoLog en modo silencioso (fichero /dev/null en Linux/Mac)
-        import os
         log_path = os.devnull
         self.sistema = SistemaCipherCoin(
             auditoria=AuditoriaArchivoLog(log_path)
@@ -367,7 +371,6 @@ class TestGestorCredenciales(unittest.TestCase):
 class TestTransferencias(unittest.TestCase):
 
     def setUp(self):
-        import os
         self.sistema = SistemaCipherCoin(
             auditoria=AuditoriaArchivoLog(os.devnull)
         )
@@ -484,7 +487,6 @@ class TestAutenticacion(unittest.TestCase):
     def setUp(self):
         import os
         
-        from src.ciphercoin.autenticacion import ServicioAutenticacion
         # para pasar los @access_control
         ContextoSeguridad().iniciar_sesion(usuario="test_user", rol=RolUsuario.ADMIN,
             sesion_id="miClave!Super73Segura")
@@ -501,12 +503,10 @@ class TestAutenticacion(unittest.TestCase):
         self.assertIsNotNone(sesion)
 
     def test_login_password_incorrecta_lanza_error(self):
-        from src.ciphercoin.autenticacion import ErrorSesionciphercoin
         with self.assertRaises((ErrorSesionciphercoin, Exception)):
                 self.auth.login("alice", "wrongpassword")
 
     def test_login_usuario_inexistente_lanza_error(self):
-        from src.ciphercoin.autenticacion import ErrorSesionciphercoin
         with self.assertRaises((ErrorSesionciphercoin, Exception)):
                 self.auth.login("noexiste", "cualquier")
 
@@ -523,17 +523,11 @@ class TestAutenticacion(unittest.TestCase):
 
     def test_sesion_estado_tiene_wallet_estado(self):
         sesion = self.auth.login("estado", "Estado#Coin2024!")
-        from src.ciphercoin.modelo import TipoWallet
         self.assertEqual(sesion.wallet.tipo, TipoWallet.ESTADO)
 
 # ---------------------------------------------------------------------------
 #  TESTS PARA LA GUI E INTERFAZ DE LOGIN
 # ---------------------------------------------------------------------------
-
-import tkinter as tk
-from unittest.mock import MagicMock, patch, PropertyMock
-from src.ciphercoin.modelo import TipoWallet
-from src.ciphercoin.gui import DashboardFrame, VentanaTransferencia, VentanaHistorial, LoginFrame
 
 # helpers de mock
 
@@ -707,7 +701,6 @@ class TestVentanaTransferencia(GuiTestCase):
 
     def test_saldo_insuficiente_muestra_error(self):
         """ErrorSaldoInsuficiente debe reflejarse en el label de error."""
-        from src.ciphercoin.modelo import ErrorSaldoInsuficiente
         ven, _ = self._make_ventana()
         self.app.sistema.transferir.side_effect = ErrorSaldoInsuficiente("Saldo insuficiente")
 
@@ -745,7 +738,6 @@ class TestVentanaHistorial(GuiTestCase):
         ven = self._make_ventana(txs=txs)
         # buscamos el Treeview dentro de la ventana
         tabla = None
-        from tkinter import ttk
         for widget in ven.winfo_children():
             for child in widget.winfo_children():
                 if isinstance(child, ttk.Treeview):
