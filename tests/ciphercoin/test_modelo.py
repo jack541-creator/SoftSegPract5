@@ -717,11 +717,16 @@ class TestVentanaHistorial(GuiTestCase):
 
     def _make_ventana(self, txs=None):
         wallet = _wallet_mock(direccion="ADDR_ALICE")
+
         self.app.sistema.historial_wallet.return_value = txs or []
-        # obtener_wallet se usa para resolver nombres de contraparte
         self.app.sistema.obtener_wallet.return_value = _wallet_mock("Contraparte")
+
         sesion = _sesion_mock(wallet=wallet)
-        return VentanaHistorial(self.app, sesion)
+
+        ven = VentanaHistorial(self.app, sesion)
+        ven.withdraw()
+
+        return ven
 
     def test_historial_vacio_no_lanza_excepcion(self):
         """con historial vacío la ventana debe construirse sin errores."""

@@ -200,7 +200,7 @@ class LoginFrame(tk.Frame):
             self._lbl_error.config(text="")
             self._app.unbind("<Return>")
             self._app.mostrar_dashboard(sesion)
-        except ErrorSesionciphercoin as e:
+        except Exception as e:
             self._lbl_error.config(text=str(e))
 
 
