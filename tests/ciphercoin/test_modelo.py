@@ -533,7 +533,7 @@ class TestAutenticacion(unittest.TestCase):
 import tkinter as tk
 from unittest.mock import MagicMock, patch, PropertyMock
 from src.ciphercoin.modelo import TipoWallet
-from gui_ciphercoin import DashboardFrame, VentanaTransferencia, VentanaHistorial
+from gui import DashboardFrame, VentanaTransferencia, VentanaHistorial
 
 # helpers de mock
 
