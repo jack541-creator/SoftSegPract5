@@ -31,15 +31,15 @@ class Test_Tokens(unittest.TestCase):
         with self.assertRaises(ErrorAutenticacion):
             token = self.gestor.generar_token(self.clave, "Github", "user1", "PasswordIncorrecta")
 
-    def autenticar_token(self):
+    def test_autenticar_token(self):
         token = self.gestor.generar_token(self.clave, "Github", "user1", "Password123!")
-        self.assertTrue(self.gestor.autenticar_token(self.clave, "Github", "user1", "Password123!", token))
-        self.assertFalse(self.gestor.autenticar_token(self.clave, "Github", "user1", "Password123!", "Tokenincorrecto"))
+        self.assertTrue(self.gestor.autenticar_token(self.clave, "Github", "user1", token))
+        self.assertFalse(self.gestor.autenticar_token(self.clave, "Github", "user1", "Tokenincorrecto"))
 
     def test_autenticar_tokens_servicio_incorrecto(self):
         with self.assertRaises(ErrorServicioNoEncontrado):
             token = self.gestor.generar_token(self.clave, "Github", "user1", "Password123!")
-            ok = self.gestor.generar_token(self.clave, "ServicioDesconocido", "user1", token)
+            ok = self.gestor.autenticar_token(self.clave, "ServicioDesconocido", "user1", token)
 
     def test_autenticar_tokens_usuario_incorrecto(self):
         with self.assertRaises(ErrorUsuarioNoEncontrado):
