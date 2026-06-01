@@ -4,7 +4,7 @@ import os
 
 from src.logger.hash_util import hash_cadena
 
-LOG_FILE = "RegistroSeguro.log"
+LOG_FILE = "ciphercoin_audit.log"
 
 # Definir el formateador personalizado
 formatter = logging.Formatter(
@@ -144,6 +144,10 @@ def verificar_cadena_hashes(log_file=LOG_FILE):
         # recomputar y comparar
         if hash_cadena(mensaje + hash_anterior) != hash_guardado:
             return False
+
+        hash_anterior = hash_guardado
+
+    return True
 
         hash_anterior = hash_guardado
 
