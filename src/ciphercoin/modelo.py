@@ -10,12 +10,10 @@ from enum import Enum
 from typing import Optional
 import icontract
 from src.logger.access_control import ContextoSeguridad, RolUsuario
+from logger.log_util import (anadir_al_log, verificar_cadena_hashes, 
+    inicializar_log, configure_logging, existe_archivo, archivo_vacio)
 
-
-from src.gestor_credenciales.gestor_credenciales import (
-    GestorCredenciales,
-    ErrorAutenticacion
-)
+from src.gestor_credenciales.gestor_credenciales import (GestorCredenciales, ErrorAutenticacion)
 
 # =========================================================
 # EXCEPCIONES
@@ -263,8 +261,7 @@ class AuditoriaArchivoLog(ServicioAuditoriaCripto):
 
     def registrar(self, accion: str, detalle: str) -> None:
         ts = datetime.now(UTC).isoformat()
-        with open(self._ruta, "a", encoding="utf-8") as f:
-            f.write(f"{ts} | {accion} | {detalle}\n")
+        anadir_al_log("debug", f" {accion}. Detalle: {detalle}")
 
 
 # =========================================================
@@ -307,24 +304,16 @@ def validar_transferencia(metodo):
     def wrapper(self, origen_dir, destino_dir, importe, *args, **kwargs):
         # El importe tiene que ser un número positivo
         if importe <= 0:
-            raise ErrorTransaccionInvalida(
-                "El importe debe ser mayor que 0, se recibio: {}".format(importe)
-            )
+            raise ErrorTransaccionInvalida("El importe debe ser mayor que 0, se recibio: {}".format(importe))
         # Comprobamos que la wallet de origen existe en el sistema
         if origen_dir not in self._wallets:
-            raise ErrorWalletNoEncontrada(
-                "Wallet origen no encontrada: {}".format(origen_dir)
-            )
+            raise ErrorWalletNoEncontrada("Wallet origen no encontrada: {}".format(origen_dir))
         # Comprobamos que la wallet de destino también existe
         if destino_dir not in self._wallets:
-            raise ErrorWalletNoEncontrada(
-                "Wallet destino no encontrada: {}".format(destino_dir)
-            )
+            raise ErrorWalletNoEncontrada("Wallet destino no encontrada: {}".format(destino_dir))
         # No tiene sentido enviarte dinero a ti mismo
         if origen_dir == destino_dir:
-            raise ErrorTransaccionInvalida(
-                "El origen y el destino no pueden ser la misma wallet"
-            )
+            raise ErrorTransaccionInvalida("El origen y el destino no pueden ser la misma wallet")
         # Todo correcto, dejamos pasar la llamada al método real
         return metodo(self, origen_dir, destino_dir, importe, *args, **kwargs)
     return wrapper
@@ -339,8 +328,7 @@ def registrar_inicio_transferencia(metodo):
         # Anotamos en el log que se va a iniciar una transferencia
         self._auditoria.registrar(
             "TRANSFERENCIA_INICIADA",
-            "de={} | a={} | importe={:.4f}".format(nombre_origen, nombre_destino, importe)
-        )
+            "de={} | a={} | importe={:.4f}".format(nombre_origen, nombre_destino, importe))
         # Ejecutamos la transferencia
         return metodo(self, origen_dir, destino_dir, importe, *args, **kwargs)
     return wrapper
@@ -354,9 +342,7 @@ def verificar_integridad_post(metodo):
         # Luego comprobamos la integridad de la cadena de bloques
         if not self._blockchain.es_integra():
             self._auditoria.registrar(
-                "ALERTA_INTEGRIDAD",
-                "La blockchain ha perdido integridad tras la ultima transferencia"
-            )
+                "ALERTA_INTEGRIDAD", "La blockchain ha perdido integridad tras la ultima transferencia")
         return resultado
     return wrapper
 # =========================================================
@@ -374,8 +360,7 @@ class SistemaCipherCoin:
     # clave maestra interna del sistema (solo para operaciones de estado)
     _CLAVE_SISTEMA = "ciphercoinSistema#2026!"
 
-    def __init__(self, estrategia_comision: Optional[EstrategiaComision] = None,
-        auditoria: Optional[ServicioAuditoriaCripto] = None, ):
+    def __init__(self, estrategia_comision: Optional[EstrategiaComision] = None, auditoria: Optional[ServicioAuditoriaCripto] = None, ):
         # strategy: comisión inyectable, por defecto intervalos
         self._comision: EstrategiaComision = (estrategia_comision or ComisionProgresiva())
         self._auditoria: ServicioAuditoriaCripto = (auditoria or AuditoriaArchivoLog())
@@ -386,7 +371,6 @@ class SistemaCipherCoin:
         # inicializar las 4 wallets predefinidas
         self._inicializar_wallets()
         
-
     # ------------------------------------------------------------------
     # Inicialización de wallets
     # ------------------------------------------------------------------
@@ -403,7 +387,6 @@ class SistemaCipherCoin:
             wallet = Wallet.crear(nombre, tipo, saldo_inicial)
             self._wallets[wallet.direccion] = wallet
             self._auditoria.registrar("WALLET_CREADA", f"{nombre} | tipo={tipo.value} | dir={wallet.direccion}")
-
         
 
     # ------------------------------------------------------------------
