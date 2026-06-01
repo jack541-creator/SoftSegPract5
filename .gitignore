@@ -7,6 +7,3 @@ __pycache__/
 .hypothesis/
 audit.log
 ciphercoin_audit.log
-RegistroSeguro.log
-log_gestor_credenciales.log
-
