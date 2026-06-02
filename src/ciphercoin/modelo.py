@@ -458,35 +458,17 @@ class SistemaCipherCoin:
         # Ejecutar movimientos
         origen.saldo  = round(origen.saldo - total, 8)
         destino.saldo = round(destino.saldo + importe, 8)
-        self.wallet_estado().saldo = round(
-            self.wallet_estado().saldo + comision, 8
-        )
+        self.wallet_estado().saldo = round(self.wallet_estado().saldo + comision, 8)
 
         # Reputación: solo si el remitente es USUARIO y el destino es PYME
         if origen.tipo == TipoWallet.USUARIO and destino.tipo == TipoWallet.PYME:
             origen.reputacion += 1
-            self._auditoria.registrar(
-                "REPUTACION_INCREMENTADA",
-                f"Usuario={origen.nombre} | nueva_rep={origen.reputacion}"
-            )
+            self._auditoria.registrar("REPUTACION_INCREMENTADA", f"Usuario={origen.nombre} | nueva_rep={origen.reputacion}")
 
         # Crear y registrar transacción
-        tx = Transaccion(
-            origen=origen_dir,
-            destino=destino_dir,
-            importe=importe,
-            comision=comision,
-            timestamp=datetime.now(UTC).isoformat(),
-        )
+        tx = Transaccion(origen=origen_dir, destino=destino_dir, importe=importe, comision=comision, timestamp=datetime.now(UTC).isoformat(),)
         self._blockchain.anadir(tx)
-        self._auditoria.registrar(
-            "TRANSFERENCIA",
-            (
-                f"de={origen.nombre} | a={destino.nombre} | "
-                f"importe={importe:.4f} | comision={comision:.4f} | "
-                f"tx_id={tx.tx_id[:12]}…"
-            ),
-        )
+        self._auditoria.registrar("TRANSFERENCIA", (f"de={origen.nombre} | a={destino.nombre} | " f"importe={importe:.4f} | comision={comision:.4f} | " f"tx_id={tx.tx_id[:12]}…"),)
         return tx
 
     # ------------------------------------------------------------------
@@ -496,9 +478,7 @@ class SistemaCipherCoin:
     def historial_wallet(self, direccion: str) -> list[dict]:
         """Devuelve todas las transacciones en que participó la wallet."""
         self._obtener_wallet_validada(direccion)   # valida existencia
-        return [
-            b["tx"] for b in self._blockchain.historial()
-            if b["tx"]["origen"] == direccion or b["tx"]["destino"] == direccion]
+        return [b["tx"] for b in self._blockchain.historial() if b["tx"]["origen"] == direccion or b["tx"]["destino"] == direccion]
 
     def historial_completo(self) -> list[dict]:
         """Devuelve toda la blockchain como lista de dicts."""
