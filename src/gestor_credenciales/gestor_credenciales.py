@@ -422,6 +422,7 @@ class GestorCredenciales:
     # =====================================================
     #  eliminar credencial
     # =====================================================
+    @access_control
     def eliminar_credencial(self, clave_maestra: str, servicio: str, usuario: str) -> bool:
         if servicio not in self._credenciales:
             raise ErrorServicioNoEncontrado()
