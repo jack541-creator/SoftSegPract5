@@ -148,7 +148,3 @@ def verificar_cadena_hashes(log_file=LOG_FILE):
         hash_anterior = hash_guardado
 
     return True
-
-        hash_anterior = hash_guardado
-
-    return True
