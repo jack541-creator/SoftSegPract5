@@ -403,6 +403,10 @@ class SistemaCipherCoin:
         """devuelve todas las wallets del sistema."""
         return list(self._wallets.values())
 
+    def calcular_comision(self, importe, reputacion):
+        """Calcula la comisión asociada a una transferencia."""
+        return self._comision.calcular(importe, reputacion)
+
     def direccion_por_nombre(self, nombre: str) -> str:
         """busca la dirección de una wallet por nombre."""
         for w in self._wallets.values():
