@@ -509,7 +509,9 @@ class GestorCredenciales:
     #  OTPs
     # =====================================================
 
-
+    @require(lambda cantidad: isinstance(cantidad, int))
+    @require(lambda cantidad: cantidad > 0)
+    @ensure(lambda result: isinstance(result, list))
     def generar_otps(self, cantidad: int) -> list:
 
         if not isinstance(cantidad, int):
@@ -533,7 +535,9 @@ class GestorCredenciales:
 
         return list(otps)
 
-
+    @require(lambda otps: isinstance(otps, list))
+    @require(lambda servicio, usuario: servicio and usuario)
+    @ensure(lambda result: result is None)
     def almacenar_otps(
     self,
     clave_maestra: str,
@@ -556,7 +560,8 @@ class GestorCredenciales:
             f"Servicio={servicio}, Usuario={usuario}"
         )
 
-
+    @require(lambda otp: isinstance(otp, str))
+    @ensure(lambda result: isinstance(result, bool))
     def verificar_otp(
         self,
         clave_maestra: str,
