@@ -1,10 +1,11 @@
-import bcrypt
 import string
-import random
-from abc import ABC, abstractmethod
-from icontract import require, ensure
 from datetime import datetime, UTC, timedelta
 from enum import Enum
+import random
+from abc import ABC, abstractmethod
+
+import bcrypt
+from icontract import require, ensure
 
 # sistema de logging seguro
 from src.logger.access_control import access_control
@@ -12,7 +13,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from logger.log_util import (anadir_al_log, verificar_cadena_hashes, 
+from logger.log_util import (anadir_al_log, verificar_cadena_hashes,
     inicializar_log, configure_logging, existe_archivo, archivo_vacio)
 
 # =========================================================
@@ -91,7 +92,6 @@ class PoliticaPassword(ABC):
     @abstractmethod
     def verificar_fortaleza(self, password: str) -> FortalezaPassword:
         """Devuelve 'débil', 'media' o 'fuerte' desde FortalezaPassword"""
-        pass
 
     def es_aceptable(self, password: str) -> bool:
         """
@@ -136,7 +136,6 @@ class HashFactory(ABC):
     @abstractmethod
     def crear(self) -> ServicioHash:
         """las subclases deciden qué instanciar."""
-        pass
 
     # método que usa el producto sin conocer su clase concreta
     def obtener_servicio(self) -> ServicioHash:
@@ -177,7 +176,7 @@ class ValidadorPassword(PoliticaPassword):  # <- hereda de PoliticaPassword
     TRIVIALES = ["12345", "qwerty"]
 
     def verificar_fortaleza(self, password: str) -> FortalezaPassword:
-        
+
         if not isinstance(password, str) or password == "":
             raise ErrorPoliticaPassword()
 
@@ -197,12 +196,17 @@ class ValidadorPassword(PoliticaPassword):  # <- hereda de PoliticaPassword
         lower_pwd = password.lower()
         contiene_trivial = any(x in lower_pwd for x in self.TRIVIALES)
 
-        cumple_mezcla = (tiene_mayus and tiene_minus and tiene_num and not mayus_solo_inicio and not contiene_trivial)
+        cumple_mezcla = (tiene_mayus
+                         and tiene_minus
+                         and tiene_num
+                         and not mayus_solo_inicio
+                         and not contiene_trivial)
 
         # ---------- Criterio 3: símbolos ----------
         posiciones_simbolos = [i for i, c in enumerate(password) if c in self.SIMBOLOS]
 
-        cumple_simbolos = len(posiciones_simbolos) > 0 and not all(i == len(password) - 1 for i in posiciones_simbolos)
+        cumple_simbolos = (len(posiciones_simbolos) > 0
+                           and not all(i == len(password) - 1 for i in posiciones_simbolos))
 
         # ---------- Criterio 4: no común ----------
         no_comun = password.lower() not in self.PASSWORDS_COMUNES
@@ -213,18 +217,22 @@ class ValidadorPassword(PoliticaPassword):  # <- hereda de PoliticaPassword
         # ---------- clasificación ----------
         if criterios <= 1:
             return FortalezaPassword.DEBIL
-        elif criterios <= 3:
+        if criterios <= 3:
             return FortalezaPassword.MEDIA
-        else:
-            return FortalezaPassword.FUERTE
+        return FortalezaPassword.FUERTE
 
 # =========================================================
 #  GESTOR CREDENCIALES
 # =========================================================
 
 class GestorCredenciales:
-    
-    def __init__(self, clave_maestra: str, tipo_hash: str = "bcrypt", log_file="log_gestor_credenciales.log", politica_password: PoliticaPassword | None = None,):
+
+    def __init__(
+            self,
+            clave_maestra: str,
+            tipo_hash: str = "bcrypt",
+            log_file="log_gestor_credenciales.log",
+            politica_password: PoliticaPassword | None = None,):
 
         # inicializar logging seguro
         self.log_file = log_file
@@ -233,20 +241,27 @@ class GestorCredenciales:
         # verificar integridad del log al iniciar
         if not existe_archivo(log_file) or archivo_vacio(log_file):
             # no debería entrar aquí porque cada vez que se inicia no está vacío
-            anadir_al_log("info", f"SISTEMA INICIADO: Nuevo archivo de log ({log_file})")
+            anadir_al_log("info",
+                          f"SISTEMA INICIADO: Nuevo archivo de log ({log_file})")
         elif verificar_cadena_hashes(log_file):
-            anadir_al_log("info", f"SISTEMA INICIADO: Log íntegro ({log_file})", log_file)
+            anadir_al_log("info",
+                          f"SISTEMA INICIADO: Log íntegro ({log_file})",
+                          log_file)
         else:
-            anadir_al_log("warning", f"LOG CORRUPTO: El archivo {log_file} ha sido modificado", log_file)
+            anadir_al_log("warning",
+                          f"LOG CORRUPTO: El archivo {log_file} ha sido modificado",
+                          log_file)
+
             print(f"ADVERTENCIA: El archivo de log {log_file} puede estar corrupto", log_file)
-        
+
         factory = obtener_factory(tipo_hash)
         self._hash_service = factory.obtener_servicio()
 
         self._audit_logger = AuditLogger("ciphercoin_audit.log")
 
         # OCP/Strategy: si no se inyecta ninguna política, se usa la por defecto
-        self._validator = politica_password if politica_password is not None else ValidadorPassword()
+        self._validator = (politica_password if politica_password is not None
+                           else ValidadorPassword())
 
         self._clave_maestra_hashed = self._hash_service.hash_clave(clave_maestra)
 
@@ -259,13 +274,14 @@ class GestorCredenciales:
 
     def _autenticar(self, clave_maestra: str, contexto: str = ""):
         if not self._hash_service.verificar_clave(clave_maestra, self._clave_maestra_hashed):
-            self._audit_logger.registrar_evento("AUTENTICACION_FALLIDA", "Clave maestra incorrecta",)
+            self._audit_logger.registrar_evento("AUTENTICACION_FALLIDA",
+                                                "Clave maestra incorrecta",)
             raise ErrorAutenticacion()
         if contexto:
-            anadir_al_log("debug", f"AUTENTICACION_EXITOSA - {contexto}") 
+            anadir_al_log("debug", f"AUTENTICACION_EXITOSA - {contexto}")
         else:
-            anadir_al_log("debug", "AUTENTICACION_EXITOSA") 
-            anadir_al_log("debug", f"AUTENTICACION_EXITOSA {contexto}") 
+            anadir_al_log("debug", "AUTENTICACION_EXITOSA")
+            anadir_al_log("debug", f"AUTENTICACION_EXITOSA {contexto}")
 
     # =====================================================
     #  anadir credencial (R)
@@ -279,8 +295,8 @@ class GestorCredenciales:
 
         for valor in [clave_maestra, servicio, usuario, password]:
             if not isinstance(valor, str):
+                anadir_al_log("error", f"ERROR_ANADIR_CREDENCIAL: Parámetros de tipo inadecuado.")
                 raise TypeError("Parámetros de tipo inadecuado.")
-                anadir_al_log("error", f"ERROR_ANADIR_CREDENCIAL: {error_msg}")
 
         clave_maestra = clave_maestra.strip()
         servicio = servicio.strip()
@@ -297,7 +313,8 @@ class GestorCredenciales:
             raise ValueError()
 
         if any(c in simbolos for c in usuario) or any(c in simbolos for c in servicio):
-            anadir_al_log("error", f"Símbolos no permitidos. Servicio: {servicio}, Usuario: {usuario}")
+            anadir_al_log("error",
+                          f"Símbolos no permitidos. Servicio: {servicio}, Usuario: {usuario}")
             raise ValueError()
 
         if any(p.upper() in palabras_peligrosas for p in servicio.split()):
@@ -593,7 +610,7 @@ class GestorCredenciales:
             return True
 
         return False
-    
+
     # =====================================================
     #  TOKENS
     # =====================================================
@@ -601,18 +618,18 @@ class GestorCredenciales:
     def generar_token(self, clave_maestra: str, servicio: str, usuario: str, password: str) -> str:
 
         self._autenticar(clave_maestra)
-        
+
         # Comprobación de existencia de servicio y usuario
         if servicio not in self._credenciales:
             raise ErrorServicioNoEncontrado
         elif usuario not in self._credenciales[servicio]:
             raise ErrorUsuarioNoEncontrado
-        
+
         # Auntenticación del usuario
         hash = self.obtener_hash_password(clave_maestra, servicio, usuario)
         if not self._hash_service.verificar_clave(password, hash):
             raise ErrorAutenticacion
-        
+
         # Creación del token
         caracteres = string.ascii_letters + string.digits
         token = "".join(
@@ -620,17 +637,17 @@ class GestorCredenciales:
                 for _ in range(16)
         )
 
-        
+
         self._credenciales[servicio][usuario]["token"] = {
             "hash" : self._hash_service.hash_clave(token),
             "expiration" : datetime.now(UTC) + timedelta(hours=1)
         }
 
         return token
-    
-    
+
+
     def autenticar_token(self, clave_maestra: str, servicio: str, usuario: str, token: str) -> bool:
-        
+
         self._autenticar(clave_maestra)
 
         # Comprobación de existencia de servicio y usuario
@@ -640,13 +657,13 @@ class GestorCredenciales:
             raise ErrorUsuarioNoEncontrado
         elif "token" not in self._credenciales[servicio][usuario]:
             raise ErrorTokenNoCreado
-        
+
         # Auntenticación del token y comprobación de la caducidad
         if datetime.now(UTC) > self._credenciales[servicio][usuario]["token"]["expiration"]:
             raise ErrorTokenCaducado
-        
+
         return self._hash_service.verificar_clave(token, self._credenciales[servicio][usuario]["token"]["hash"])
-    
+
     def renovar_sesion(self, clave_maestra: str, servicio: str, usuario: str) -> None:
 
         self._autenticar(clave_maestra)
@@ -658,5 +675,5 @@ class GestorCredenciales:
             raise ErrorUsuarioNoEncontrado
         elif "token" not in self._credenciales[servicio][usuario]:
             raise ErrorTokenNoCreado
-        
+
         self._credenciales[servicio][usuario]["token"]["expiration"] = datetime.now(UTC) + timedelta(hours=1)

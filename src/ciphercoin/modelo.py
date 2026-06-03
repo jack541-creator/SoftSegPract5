@@ -13,11 +13,7 @@ from datetime import datetime, UTC
 from enum import Enum
 from typing import Optional
 import icontract
-from src.logger.access_control import ContextoSeguridad, RolUsuario
-from src.logger.log_util import (anadir_al_log, verificar_cadena_hashes,
-    inicializar_log, configure_logging, existe_archivo, archivo_vacio)
-
-from src.gestor_credenciales.gestor_credenciales import (GestorCredenciales, ErrorAutenticacion)
+from src.logger.log_util import anadir_al_log
 
 # =========================================================
 # EXCEPCIONES

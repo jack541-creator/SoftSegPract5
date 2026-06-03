@@ -3,7 +3,7 @@ import os
 import sys
 
 from src.ciphercoin.modelo import (SistemaCipherCoin, ComisionProgresiva, TipoWallet, Wallet, Transaccion, Blockchain, 
-                                   ErrorSaldoInsuficiente, ErrorWalletNoEncontrada, AuditoriaArchivoLog, ErrorAutenticacion )
+                                   ErrorSaldoInsuficiente, ErrorWalletNoEncontrada, AuditoriaArchivoLog)
 from src.logger.access_control import ContextoSeguridad, RolUsuario
 from src.ciphercoin.autenticacion import ServicioAutenticacion, ErrorSesionciphercoin
 import tkinter as tk
