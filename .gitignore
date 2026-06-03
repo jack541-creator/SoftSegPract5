@@ -7,3 +7,5 @@ __pycache__/
 .hypothesis/
 audit.log
 ciphercoin_audit.log
+RegistroSeguro.log
+ciphercoin_audit.log
