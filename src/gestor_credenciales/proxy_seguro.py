@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Callable
+from src.logger.log_util import anadir_al_log
 
 
 # =========================
@@ -118,6 +119,7 @@ class AuditHandler(SecurityHandler):
         try:
             result = super().handle(request)
 
+            anadir_al_log("info", f"{request.sesion.usuario} : {request.accion} --> permitido")
             self._auditoria.append({
                 "fecha": datetime.now(timezone.utc).isoformat(),
                 "usuario": request.sesion.usuario,
@@ -128,6 +130,7 @@ class AuditHandler(SecurityHandler):
             return result
 
         except Exception as e:
+            anadir_al_log("info", f"{request.sesion.usuario} : {request.accion} --> denegado")
             self._auditoria.append({
                 "fecha": datetime.now(timezone.utc).isoformat(),
                 "usuario": request.sesion.usuario,
@@ -211,8 +214,16 @@ class ProxySeguroGestorCredenciales:
         data = self._usuarios.get(usuario)
 
         if not data or data["password"] != password:
+            try:
+                anadir_al_log("info", f"{usuario} login -> denegado")
+            except:
+                pass
             raise ErrorAutenticacion()
 
+        try:
+            anadir_al_log("info", f"{usuario} login -> permitido")
+        except:
+            pass
         return Sesion(usuario=usuario)
 
     # -------------------------
