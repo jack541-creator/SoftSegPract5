@@ -269,7 +269,6 @@ class DashboardFrame(tk.Frame):
         self._sesion = sesion
 
         self._var_saldo = tk.StringVar()
-        self._var_rep = tk.StringVar()
         self._frame_historial = None
         self._tabla_rapida = None
 
@@ -337,6 +336,7 @@ class DashboardFrame(tk.Frame):
 
         #reputación (solo para USUARIO)  ─────────────────────────
         if wallet.tipo == TipoWallet.USUARIO:
+            self._var_rep = tk.StringVar()
             self._var_rep.set(f"⭐ Reputación: {wallet.reputacion}")
             tk.Label(card,textvariable=self._var_rep,
                      bg=COLORES["fondo_card"],
@@ -437,7 +437,7 @@ class DashboardFrame(tk.Frame):
         """Actualiza la info de la wallet y el historial reciente"""
         w = self._sesion.wallet
         self._var_saldo.set(f"{w.saldo:.4f} ₿")
-        if w.tipo == TipoWallet.USUARIO:
+        if w.tipo == TipoWallet.USUARIO and hasattr(self, "_var_rep"):
             self._var_rep.set(f"⭐ Reputación: {w.reputacion}")
         self._actualizar_historial_rapido()
 

@@ -1,4 +1,8 @@
-# La contraseña de prueba de los usuarios es "4nv=8GsOy94R" y la clave maestra del gestor de prueba es "claveMaestraSegura123!"
+"""
+La contraseña de prueba de los usuarios es "4nv=8GsOy94R" y la
+clave maestra del gestor de prueba es "claveMaestraSegura123!"
+"""
+
 from __future__ import annotations
 import functools
 import hashlib
@@ -10,7 +14,7 @@ from enum import Enum
 from typing import Optional
 import icontract
 from src.logger.access_control import ContextoSeguridad, RolUsuario
-from src.logger.log_util import (anadir_al_log, verificar_cadena_hashes, 
+from src.logger.log_util import (anadir_al_log, verificar_cadena_hashes,
     inicializar_log, configure_logging, existe_archivo, archivo_vacio)
 
 from src.gestor_credenciales.gestor_credenciales import (GestorCredenciales, ErrorAutenticacion)
@@ -156,7 +160,7 @@ class Wallet:
 
     @icontract.require(lambda cantidad: isinstance(cantidad, (int, float)) and cantidad > 0, "La cantidad a retirar debe ser positiva")
     @icontract.ensure(lambda self: self.saldo >= 0, "El saldo no puede quedar negativo")
-    def retirar(self, cantidad: float) -> None:  
+    def retirar(self, cantidad: float) -> None:
         """ Se retira el saldo especificado de la cartera para realizar las acciones necesarias"""
         if self.saldo < cantidad:
             raise ErrorSaldoInsuficiente(f"Saldo insuficiente: disponible {self.saldo:.4f}, requerido {cantidad:.4f}")
@@ -370,7 +374,7 @@ class SistemaCipherCoin:
 
         # inicializar las 4 wallets predefinidas
         self._inicializar_wallets()
-        
+
     # ------------------------------------------------------------------
     # Inicialización de wallets
     # ------------------------------------------------------------------
@@ -383,11 +387,11 @@ class SistemaCipherCoin:
             ("Bob (Usuario)",      TipoWallet.USUARIO,  25.0),
             ("TechPyme S.L.",      TipoWallet.PYME,     50.0), ]
         for nombre, tipo, saldo_inicial in definiciones:
-            direccion = Wallet.generar_direccion(nombre, tipo)
+            #direccion = Wallet.generar_direccion(nombre, tipo)
             wallet = Wallet.crear(nombre, tipo, saldo_inicial)
             self._wallets[wallet.direccion] = wallet
             self._auditoria.registrar("WALLET_CREADA", f"{nombre} | tipo={tipo.value} | dir={wallet.direccion}")
-        
+
 
     # ------------------------------------------------------------------
     # Consultas
@@ -482,7 +486,9 @@ class SistemaCipherCoin:
     def historial_wallet(self, direccion: str) -> list[dict]:
         """Devuelve todas las transacciones en que participó la wallet."""
         self._obtener_wallet_validada(direccion)   # valida existencia
-        return [b["tx"] for b in self._blockchain.historial() if b["tx"]["origen"] == direccion or b["tx"]["destino"] == direccion]
+        return [b["tx"] for b in self._blockchain.historial() if
+                b["tx"]["origen"] == direccion or
+                b["tx"]["destino"] == direccion]
 
     def historial_completo(self) -> list[dict]:
         """Devuelve toda la blockchain como lista de dicts."""
