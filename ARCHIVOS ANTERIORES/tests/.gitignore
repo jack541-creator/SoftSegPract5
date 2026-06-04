@@ -1,9 +1,0 @@
-.DS_Store
-.venv
-venv
-__pycache__/
-.ruff_cache/
-.pytest_cache/
-.hypothesis/
-audit.log
-
