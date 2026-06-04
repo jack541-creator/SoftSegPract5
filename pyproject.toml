@@ -28,3 +28,24 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = "-v --tb=short"
+
+[tool.ruff]
+line-length = 100 
+
+[tool.ruff.lint]
+# Enable standard lint rules that match Pylint behaviors
+select = ["E", "F", "W", "UP"]
+
+[tool.pylint."MESSAGES CONTROL"]
+disable = [
+    "missing-module-docstring",
+    "missing-class-docstring",
+    "missing-function-docstring",
+    "too-few-public-methods",
+    "too-many-lines",
+    "duplicate-code"        # False positives in tests
+]
+
+
+[tool.pylint.DESIGN]
+max-args = 6                # Reasonable limit for complex functions/GUIs

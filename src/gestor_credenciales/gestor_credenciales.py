@@ -1,3 +1,5 @@
+import sys
+import os
 import string
 from datetime import datetime, UTC, timedelta
 from enum import Enum
@@ -9,16 +11,22 @@ from icontract import require, ensure
 
 # sistema de logging seguro
 from src.logger.access_control import access_control
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from logger.log_util import (anadir_al_log, verificar_cadena_hashes,
-    inicializar_log, configure_logging, existe_archivo, archivo_vacio)
+from src.logger.log_util import (
+    anadir_al_log,
+    verificar_cadena_hashes,
+    inicializar_log,
+    configure_logging,
+    existe_archivo,
+    archivo_vacio,
+)
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # =========================================================
 #  EXCEPCIONES
 # =========================================================
+
 
 class ErrorPoliticaPassword(Exception):
     pass
@@ -47,9 +55,11 @@ class ErrorTokenNoCreado(Exception):
 class ErrorTokenCaducado(Exception):
     pass
 
+
 # =========================================================
 #  INTERFAZ HASH
 # =========================================================
+
 
 class ServicioHash(ABC):
     @abstractmethod
@@ -72,15 +82,17 @@ class ServicioAuditoria(ABC):
 #  FORTALEZA
 # =========================================================
 
+
 class FortalezaPassword(str, Enum):
-    DEBIL  = "débil"
-    MEDIA  = "media"
+    DEBIL = "débil"
+    MEDIA = "media"
     FUERTE = "fuerte"
 
 
 # =========================================================
 #  OCP: INTERFAZ POLÍTICA DE PASSWORD (Strategy)
 # =========================================================
+
 
 class PoliticaPassword(ABC):
     """Interfaz para la política de validación de contraseñas.
@@ -101,7 +113,8 @@ class PoliticaPassword(ABC):
         """
         return self.verificar_fortaleza(password) in (
             FortalezaPassword.MEDIA,
-            FortalezaPassword.FUERTE,)
+            FortalezaPassword.FUERTE,
+        )
 
 
 class AuditLogger(ServicioAuditoria):
@@ -118,6 +131,7 @@ class AuditLogger(ServicioAuditoria):
 #  IMPLEMENTACIÓN BCRYPT
 # =========================================================
 
+
 class ServicioHashBcrypt(ServicioHash):
     def hash_clave(self, clave: str) -> bytes:
         return bcrypt.hashpw(clave.encode("utf-8"), bcrypt.gensalt())
@@ -129,6 +143,7 @@ class ServicioHashBcrypt(ServicioHash):
 # =========================================================
 #  FACTORY METHOD  (GoF)
 # =========================================================
+
 
 class HashFactory(ABC):
     """clase base abstracta, declara el factory method"""
@@ -151,7 +166,9 @@ class BcryptFactory(HashFactory):
 
 
 # registro abierto a extensión sin modificar HashFactory ni BcryptFactory
-_FACTORIES: dict[str, type[HashFactory]] = {"bcrypt": BcryptFactory,}
+_FACTORIES: dict[str, type[HashFactory]] = {
+    "bcrypt": BcryptFactory,
+}
 
 
 def registrar_factory(tipo: str, factory: type[HashFactory]) -> None:
@@ -169,14 +186,28 @@ def obtener_factory(tipo: str = "bcrypt") -> HashFactory:
 #  VALIDADOR PASSWORD (R)
 # =========================================================
 
+
 class ValidadorPassword(PoliticaPassword):  # <- hereda de PoliticaPassword
-    PASSWORDS_COMUNES = {"password", "123456", "12345678", "qwerty", "abc123","111111",
-        "123123", "admin", "user", "contraseña", "0000000", "seguro", "hola", "abcdefg",}
+    PASSWORDS_COMUNES = {
+        "password",
+        "123456",
+        "12345678",
+        "qwerty",
+        "abc123",
+        "111111",
+        "123123",
+        "admin",
+        "user",
+        "contraseña",
+        "0000000",
+        "seguro",
+        "hola",
+        "abcdefg",
+    }
     SIMBOLOS = set(r"!@#$%^&*()-_=+[]{}|;:',.<>?/`~")
     TRIVIALES = ["12345", "qwerty"]
 
     def verificar_fortaleza(self, password: str) -> FortalezaPassword:
-
         if not isinstance(password, str) or password == "":
             raise ErrorPoliticaPassword()
 
@@ -196,17 +227,20 @@ class ValidadorPassword(PoliticaPassword):  # <- hereda de PoliticaPassword
         lower_pwd = password.lower()
         contiene_trivial = any(x in lower_pwd for x in self.TRIVIALES)
 
-        cumple_mezcla = (tiene_mayus
-                         and tiene_minus
-                         and tiene_num
-                         and not mayus_solo_inicio
-                         and not contiene_trivial)
+        cumple_mezcla = (
+            tiene_mayus
+            and tiene_minus
+            and tiene_num
+            and not mayus_solo_inicio
+            and not contiene_trivial
+        )
 
         # ---------- Criterio 3: símbolos ----------
         posiciones_simbolos = [i for i, c in enumerate(password) if c in self.SIMBOLOS]
 
-        cumple_simbolos = (len(posiciones_simbolos) > 0
-                           and not all(i == len(password) - 1 for i in posiciones_simbolos))
+        cumple_simbolos = len(posiciones_simbolos) > 0 and not all(
+            i == len(password) - 1 for i in posiciones_simbolos
+        )
 
         # ---------- Criterio 4: no común ----------
         no_comun = password.lower() not in self.PASSWORDS_COMUNES
@@ -221,19 +255,20 @@ class ValidadorPassword(PoliticaPassword):  # <- hereda de PoliticaPassword
             return FortalezaPassword.MEDIA
         return FortalezaPassword.FUERTE
 
+
 # =========================================================
 #  GESTOR CREDENCIALES
 # =========================================================
 
+
 class GestorCredenciales:
-
     def __init__(
-            self,
-            clave_maestra: str,
-            tipo_hash: str = "bcrypt",
-            log_file="log_gestor_credenciales.log",
-            politica_password: PoliticaPassword | None = None,):
-
+        self,
+        clave_maestra: str,
+        tipo_hash: str = "bcrypt",
+        log_file="log_gestor_credenciales.log",
+        politica_password: PoliticaPassword | None = None,
+    ):
         # inicializar logging seguro
         self.log_file = log_file
         configure_logging(log_file)
@@ -241,18 +276,20 @@ class GestorCredenciales:
         # verificar integridad del log al iniciar
         if not existe_archivo(log_file) or archivo_vacio(log_file):
             # no debería entrar aquí porque cada vez que se inicia no está vacío
-            anadir_al_log("info",
-                          f"SISTEMA INICIADO: Nuevo archivo de log ({log_file})")
+            anadir_al_log("info", f"SISTEMA INICIADO: Nuevo archivo de log ({log_file})")
         elif verificar_cadena_hashes(log_file):
-            anadir_al_log("info",
-                          f"SISTEMA INICIADO: Log íntegro ({log_file})",
-                          log_file)
+            anadir_al_log("info", f"SISTEMA INICIADO: Log íntegro ({log_file})", log_file)
         else:
-            anadir_al_log("warning",
-                          f"LOG CORRUPTO: El archivo {log_file} ha sido modificado",
-                          log_file)
+            anadir_al_log(
+                "warning",
+                f"LOG CORRUPTO: El archivo {log_file} ha sido modificado",
+                log_file,
+            )
 
-            print(f"ADVERTENCIA: El archivo de log {log_file} puede estar corrupto", log_file)
+            print(
+                f"ADVERTENCIA: El archivo de log {log_file} puede estar corrupto",
+                log_file,
+            )
 
         factory = obtener_factory(tipo_hash)
         self._hash_service = factory.obtener_servicio()
@@ -260,8 +297,9 @@ class GestorCredenciales:
         self._audit_logger = AuditLogger("ciphercoin_audit.log")
 
         # OCP/Strategy: si no se inyecta ninguna política, se usa la por defecto
-        self._validator = (politica_password if politica_password is not None
-                           else ValidadorPassword())
+        self._validator = (
+            politica_password if politica_password is not None else ValidadorPassword()
+        )
 
         self._clave_maestra_hashed = self._hash_service.hash_clave(clave_maestra)
 
@@ -274,8 +312,10 @@ class GestorCredenciales:
 
     def _autenticar(self, clave_maestra: str, contexto: str = ""):
         if not self._hash_service.verificar_clave(clave_maestra, self._clave_maestra_hashed):
-            self._audit_logger.registrar_evento("AUTENTICACION_FALLIDA",
-                                                "Clave maestra incorrecta",)
+            self._audit_logger.registrar_evento(
+                "AUTENTICACION_FALLIDA",
+                "Clave maestra incorrecta",
+            )
             raise ErrorAutenticacion()
         if contexto:
             anadir_al_log("debug", f"AUTENTICACION_EXITOSA - {contexto}")
@@ -290,12 +330,22 @@ class GestorCredenciales:
     @access_control
     def anadir_credencial(self, clave_maestra, servicio, usuario, password):
         simbolos = "!>;'\\/[]{}:\n\r|&"
-        palabras_peligrosas = ["DROP", "DELETE", "UPDATE", "ALTER", "CREATE",
-                                "TABLE", "ALERT", "SCRIPT", "EXECUTE", "IMMEDIATE",]
+        palabras_peligrosas = [
+            "DROP",
+            "DELETE",
+            "UPDATE",
+            "ALTER",
+            "CREATE",
+            "TABLE",
+            "ALERT",
+            "SCRIPT",
+            "EXECUTE",
+            "IMMEDIATE",
+        ]
 
         for valor in [clave_maestra, servicio, usuario, password]:
             if not isinstance(valor, str):
-                anadir_al_log("error", f"ERROR_ANADIR_CREDENCIAL: Parámetros de tipo inadecuado.")
+                anadir_al_log("error", "ERROR_ANADIR_CREDENCIAL: Parámetros de tipo inadecuado.")
                 raise TypeError("Parámetros de tipo inadecuado.")
 
         clave_maestra = clave_maestra.strip()
@@ -313,8 +363,10 @@ class GestorCredenciales:
             raise ValueError()
 
         if any(c in simbolos for c in usuario) or any(c in simbolos for c in servicio):
-            anadir_al_log("error",
-                          f"Símbolos no permitidos. Servicio: {servicio}, Usuario: {usuario}")
+            anadir_al_log(
+                "error",
+                f"Símbolos no permitidos. Servicio: {servicio}, Usuario: {usuario}",
+            )
             raise ValueError()
 
         if any(p.upper() in palabras_peligrosas for p in servicio.split()):
@@ -353,15 +405,13 @@ class GestorCredenciales:
 
         self._autenticar(clave_maestra)
 
-        if (
-            servicio not in self._credenciales
-            or usuario not in self._credenciales[servicio]
-        ):
+        if servicio not in self._credenciales or usuario not in self._credenciales[servicio]:
             raise ErrorServicioNoEncontrado()
 
         self._audit_logger.registrar_evento(
             "CREDENCIAL_CONSULTADA",
-            f"Servicio={servicio}, Usuario={usuario}",)
+            f"Servicio={servicio}, Usuario={usuario}",
+        )
 
         return self._credenciales[servicio][usuario]["hash"]
 
@@ -375,7 +425,8 @@ class GestorCredenciales:
         servicio: str,
         usuario: str,
         password_actual: str,
-        password_nueva: str,) -> bool:
+        password_nueva: str,
+    ) -> bool:
         for valor in [clave_maestra, password_actual, password_nueva]:
             if not isinstance(valor, str):
                 raise TypeError("Todos los parámetros deben ser str")
@@ -402,7 +453,9 @@ class GestorCredenciales:
         if not self.es_password_segura(password_nueva):
             raise ErrorPoliticaPassword()
 
-        self._credenciales[servicio.strip()][usuario.strip()]["hash"] = self._hash_service.hash_clave(password_nueva)
+        self._credenciales[servicio.strip()][usuario.strip()]["hash"] = (
+            self._hash_service.hash_clave(password_nueva)
+        )
 
         self._audit_logger.registrar_evento(
             "PASSWORD_CAMBIADA",
@@ -457,7 +510,8 @@ class GestorCredenciales:
 
         self._audit_logger.registrar_evento(
             "CREDENCIAL_ELIMINADA",
-            f"Servicio={servicio}, Usuario={usuario}",)
+            f"Servicio={servicio}, Usuario={usuario}",
+        )
 
         return True
 
@@ -469,10 +523,10 @@ class GestorCredenciales:
         servicio: str,
         usuario_antiguo: str,
         usuario_nuevo: str,
-        clave_maestra: str,) -> bool:
+        clave_maestra: str,
+    ) -> bool:
         if not all(
-            isinstance(x, str) and x.strip()
-            for x in [servicio, usuario_antiguo, usuario_nuevo]
+            isinstance(x, str) and x.strip() for x in [servicio, usuario_antiguo, usuario_nuevo]
         ):
             raise ValueError()
 
@@ -482,8 +536,16 @@ class GestorCredenciales:
 
         simbolos_invalidos = "!>;'\\/[]{}:\n\r"
         palabras_peligrosas = [
-            "DROP", "DELETE", "UPDATE", "ALTER", "CREATE",
-            "TABLE", "ALERT", "SCRIPT", "EXECUTE", "IMMEDIATE",
+            "DROP",
+            "DELETE",
+            "UPDATE",
+            "ALTER",
+            "CREATE",
+            "TABLE",
+            "ALERT",
+            "SCRIPT",
+            "EXECUTE",
+            "IMMEDIATE",
         ]
 
         if len(usuario_nuevo) > 255:
@@ -518,7 +580,8 @@ class GestorCredenciales:
 
         self._audit_logger.registrar_evento(
             "USUARIO_CAMBIADO",
-            f"Servicio={servicio}, Usuario antiguo={usuario_antiguo}, Usuario nuevo={usuario_nuevo}",
+            f"Servicio={servicio}, Usuario antiguo={usuario_antiguo}, "
+            f"Usuario nuevo={usuario_nuevo}",
         )
 
         return True
@@ -531,7 +594,6 @@ class GestorCredenciales:
     @require(lambda cantidad: cantidad > 0)
     @ensure(lambda result: isinstance(result, list))
     def generar_otps(self, cantidad: int) -> list:
-
         if not isinstance(cantidad, int):
             raise TypeError
 
@@ -543,11 +605,7 @@ class GestorCredenciales:
         otps = set()
 
         while len(otps) < cantidad:
-
-            otp = "".join(
-                random.choice(caracteres)
-                for _ in range(6)
-        )
+            otp = "".join(random.choice(caracteres) for _ in range(6))
 
             otps.add(otp)
 
@@ -556,38 +614,21 @@ class GestorCredenciales:
     @require(lambda otps: isinstance(otps, list))
     @require(lambda servicio, usuario: servicio and usuario)
     @ensure(lambda result: result is None)
-    def almacenar_otps(
-    self,
-    clave_maestra: str,
-    servicio: str,
-    usuario: str,
-    otps: list
-) -> None:
-
+    def almacenar_otps(self, clave_maestra: str, servicio: str, usuario: str, otps: list) -> None:
         if not isinstance(otps, list):
             raise TypeError
 
         self._autenticar(clave_maestra)
 
-        self._credenciales[servicio][usuario]["otps"] = (
-            otps.copy()
-    )
+        self._credenciales[servicio][usuario]["otps"] = otps.copy()
 
         self._audit_logger.registrar_evento(
-            "OTPS_ALMACENADAS",
-            f"Servicio={servicio}, Usuario={usuario}"
+            "OTPS_ALMACENADAS", f"Servicio={servicio}, Usuario={usuario}"
         )
 
     @require(lambda otp: isinstance(otp, str))
     @ensure(lambda result: isinstance(result, bool))
-    def verificar_otp(
-        self,
-        clave_maestra: str,
-        servicio: str,
-        usuario: str,
-        otp: str
-    ) -> bool:
-
+    def verificar_otp(self, clave_maestra: str, servicio: str, usuario: str, otp: str) -> bool:
         if not isinstance(otp, str):
             return False
 
@@ -597,15 +638,11 @@ class GestorCredenciales:
         self._autenticar(clave_maestra)
 
         if otp in self._credenciales[servicio][usuario]["otps"]:
-
-            self._credenciales[servicio][usuario]["otps"].remove(
-                otp
-        )
+            self._credenciales[servicio][usuario]["otps"].remove(otp)
 
             self._audit_logger.registrar_evento(
-                "OTP_VERIFICADO",
-                f"Servicio={servicio}, Usuario={usuario}"
-        )
+                "OTP_VERIFICADO", f"Servicio={servicio}, Usuario={usuario}"
+            )
 
             return True
 
@@ -616,13 +653,12 @@ class GestorCredenciales:
     # =====================================================
 
     def generar_token(self, clave_maestra: str, servicio: str, usuario: str, password: str) -> str:
-
         self._autenticar(clave_maestra)
 
         # Comprobación de existencia de servicio y usuario
         if servicio not in self._credenciales:
             raise ErrorServicioNoEncontrado
-        elif usuario not in self._credenciales[servicio]:
+        if usuario not in self._credenciales[servicio]:
             raise ErrorUsuarioNoEncontrado
 
         # Auntenticación del usuario
@@ -632,48 +668,45 @@ class GestorCredenciales:
 
         # Creación del token
         caracteres = string.ascii_letters + string.digits
-        token = "".join(
-                random.choice(caracteres)
-                for _ in range(16)
-        )
-
+        token = "".join(random.choice(caracteres) for _ in range(16))
 
         self._credenciales[servicio][usuario]["token"] = {
-            "hash" : self._hash_service.hash_clave(token),
-            "expiration" : datetime.now(UTC) + timedelta(hours=1)
+            "hash": self._hash_service.hash_clave(token),
+            "expiration": datetime.now(UTC) + timedelta(hours=1),
         }
 
         return token
 
-
     def autenticar_token(self, clave_maestra: str, servicio: str, usuario: str, token: str) -> bool:
-
         self._autenticar(clave_maestra)
 
         # Comprobación de existencia de servicio y usuario
         if servicio not in self._credenciales:
             raise ErrorServicioNoEncontrado
-        elif usuario not in self._credenciales[servicio]:
+        if usuario not in self._credenciales[servicio]:
             raise ErrorUsuarioNoEncontrado
-        elif "token" not in self._credenciales[servicio][usuario]:
+        if "token" not in self._credenciales[servicio][usuario]:
             raise ErrorTokenNoCreado
 
         # Auntenticación del token y comprobación de la caducidad
         if datetime.now(UTC) > self._credenciales[servicio][usuario]["token"]["expiration"]:
             raise ErrorTokenCaducado
 
-        return self._hash_service.verificar_clave(token, self._credenciales[servicio][usuario]["token"]["hash"])
+        return self._hash_service.verificar_clave(
+            token, self._credenciales[servicio][usuario]["token"]["hash"]
+        )
 
     def renovar_sesion(self, clave_maestra: str, servicio: str, usuario: str) -> None:
-
         self._autenticar(clave_maestra)
 
         # Comprobación de existencia de servicio y usuario
         if servicio not in self._credenciales:
             raise ErrorServicioNoEncontrado
-        elif usuario not in self._credenciales[servicio]:
+        if usuario not in self._credenciales[servicio]:
             raise ErrorUsuarioNoEncontrado
-        elif "token" not in self._credenciales[servicio][usuario]:
+        if "token" not in self._credenciales[servicio][usuario]:
             raise ErrorTokenNoCreado
 
-        self._credenciales[servicio][usuario]["token"]["expiration"] = datetime.now(UTC) + timedelta(hours=1)
+        self._credenciales[servicio][usuario]["token"]["expiration"] = datetime.now(
+            UTC
+        ) + timedelta(hours=1)

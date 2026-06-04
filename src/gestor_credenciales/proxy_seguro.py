@@ -1,12 +1,13 @@
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import Callable
+from datetime import datetime, UTC
+from collections.abc import Callable
 from src.logger.log_util import anadir_al_log
 
 
 # =========================
 # Exceptions
 # =========================
+
 
 class ErrorAutenticacion(Exception):
     pass
@@ -19,6 +20,7 @@ class ErrorAutorizacion(Exception):
 # =========================
 # Core session + request
 # =========================
+
 
 @dataclass(frozen=True)
 class Sesion:
@@ -38,6 +40,7 @@ class Request:
 # Chain of Responsibility
 # =========================
 
+
 class SecurityHandler:
     def __init__(self, next_handler=None):
         self._next = next_handler
@@ -51,6 +54,7 @@ class SecurityHandler:
 # =========================
 # Authentication Layer
 # =========================
+
 
 class AuthHandler(SecurityHandler):
     def __init__(self, proxy, next_handler=None):
@@ -70,6 +74,7 @@ class AuthHandler(SecurityHandler):
 # Authorization Layer (RBAC)
 # =========================
 
+
 class RBACHandler(SecurityHandler):
     def __init__(self, proxy, policies, next_handler=None):
         super().__init__(next_handler)
@@ -86,9 +91,7 @@ class RBACHandler(SecurityHandler):
         permisos = self._policies.get(rol_real, set())
 
         if request.accion not in permisos:
-            raise ErrorAutorizacion(
-                f"Rol '{rol_real}' no autorizado para '{request.accion}'"
-            )
+            raise ErrorAutorizacion(f"Rol '{rol_real}' no autorizado para '{request.accion}'")
 
         return super().handle(request)
 
@@ -96,6 +99,7 @@ class RBACHandler(SecurityHandler):
 # =========================
 # Validation Layer
 # =========================
+
 
 class ValidationHandler(SecurityHandler):
     def handle(self, request: Request):
@@ -110,6 +114,7 @@ class ValidationHandler(SecurityHandler):
 # Audit Layer
 # =========================
 
+
 class AuditHandler(SecurityHandler):
     def __init__(self, auditoria, next_handler=None):
         super().__init__(next_handler)
@@ -120,29 +125,34 @@ class AuditHandler(SecurityHandler):
             result = super().handle(request)
 
             anadir_al_log("info", f"{request.sesion.usuario} : {request.accion} --> permitido")
-            self._auditoria.append({
-                "fecha": datetime.now(timezone.utc).isoformat(),
-                "usuario": request.sesion.usuario,
-                "accion": request.accion,
-                "resultado": "permitido",
-            })
+            self._auditoria.append(
+                {
+                    "fecha": datetime.now(UTC).isoformat(),
+                    "usuario": request.sesion.usuario,
+                    "accion": request.accion,
+                    "resultado": "permitido",
+                }
+            )
 
             return result
 
-        except Exception as e:
+        except Exception:
             anadir_al_log("info", f"{request.sesion.usuario} : {request.accion} --> denegado")
-            self._auditoria.append({
-                "fecha": datetime.now(timezone.utc).isoformat(),
-                "usuario": request.sesion.usuario,
-                "accion": request.accion,
-                "resultado": "denegado",
-            })
+            self._auditoria.append(
+                {
+                    "fecha": datetime.now(UTC).isoformat(),
+                    "usuario": request.sesion.usuario,
+                    "accion": request.accion,
+                    "resultado": "denegado",
+                }
+            )
             raise
 
 
 # =========================
 # Execution Layer
 # =========================
+
 
 class ExecutionHandler(SecurityHandler):
     def handle(self, request: Request):
@@ -153,8 +163,8 @@ class ExecutionHandler(SecurityHandler):
 # Proxy
 # =========================
 
-class ProxySeguroGestorCredenciales:
 
+class ProxySeguroGestorCredenciales:
     POLITICAS = {
         "admin": {
             "anadir_credencial",
@@ -216,13 +226,13 @@ class ProxySeguroGestorCredenciales:
         if not data or data["password"] != password:
             try:
                 anadir_al_log("info", f"{usuario} login -> denegado")
-            except:
+            except Exception:
                 pass
             raise ErrorAutenticacion()
 
         try:
             anadir_al_log("info", f"{usuario} login -> permitido")
-        except:
+        except Exception:
             pass
         return Sesion(usuario=usuario)
 
@@ -247,51 +257,45 @@ class ProxySeguroGestorCredenciales:
 
     def anadir_credencial(self, sesion, *args, **kwargs):
         return self._ejecutar(
-            sesion, "anadir_credencial",
-            self._gestor.anadir_credencial,
-            *args, **kwargs
+            sesion, "anadir_credencial", self._gestor.anadir_credencial, *args, **kwargs
         )
 
     def eliminar_credencial(self, sesion, *args, **kwargs):
         return self._ejecutar(
-            sesion, "eliminar_credencial",
+            sesion,
+            "eliminar_credencial",
             self._gestor.eliminar_credencial,
-            *args, **kwargs
+            *args,
+            **kwargs,
         )
 
     def obtener_hash_password(self, sesion, *args, **kwargs):
         return self._ejecutar(
-            sesion, "obtener_hash_password",
+            sesion,
+            "obtener_hash_password",
             self._gestor.obtener_hash_password,
-            *args, **kwargs
+            *args,
+            **kwargs,
         )
 
     def cambiar_password(self, sesion, *args, **kwargs):
         return self._ejecutar(
-            sesion, "cambiar_password",
-            self._gestor.cambiar_password,
-            *args, **kwargs
+            sesion, "cambiar_password", self._gestor.cambiar_password, *args, **kwargs
         )
 
     def cambiar_usuario(self, sesion, *args, **kwargs):
         return self._ejecutar(
-            sesion, "cambiar_usuario",
-            self._gestor.cambiar_usuario,
-            *args, **kwargs
+            sesion, "cambiar_usuario", self._gestor.cambiar_usuario, *args, **kwargs
         )
 
     def listar_servicios(self, sesion, *args, **kwargs):
         return self._ejecutar(
-            sesion, "listar_servicios",
-            self._gestor.listar_servicios,
-            *args, **kwargs
+            sesion, "listar_servicios", self._gestor.listar_servicios, *args, **kwargs
         )
 
     def listar_usuarios(self, sesion, *args, **kwargs):
         return self._ejecutar(
-            sesion, "listar_usuarios",
-            self._gestor.listar_usuarios,
-            *args, **kwargs
+            sesion, "listar_usuarios", self._gestor.listar_usuarios, *args, **kwargs
         )
 
     # -------------------------

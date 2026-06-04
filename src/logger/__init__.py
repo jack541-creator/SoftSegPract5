@@ -9,31 +9,34 @@ from src.logger.log_util import (
     leer_ultima_linea_log,
     verificar_cadena_hashes,
     hash_cadena,
-    #SecureLogManager,
-    #MonitorFunciones,
-    LOG_FILE,                )
+    # SecureLogManager,
+    # MonitorFunciones,
+    LOG_FILE,
+)
 
 from src.logger.access_control import (
     access_control,
     access_control_simple,
     ContextoSeguridad,
     RolUsuario,
-    Permiso,               )
+    Permiso,
+)
 
 __all__ = [
     # hash logging
-    'configure_logging',
-    'inicializar_log',
-    'anadir_al_log',
-    'leer_ultima_linea_log',
-    'verificar_cadena_hashes',
-    'hash_cadena',
-    'SecureLogManager',
-    'MonitorFunciones',
-    'LOG_FILE',
+    "configure_logging",
+    "inicializar_log",
+    "anadir_al_log",
+    "leer_ultima_linea_log",
+    "verificar_cadena_hashes",
+    "hash_cadena",
+    "SecureLogManager",
+    "MonitorFunciones",
+    "LOG_FILE",
     # access control
-    'access_control',
-    'access_control_simple',
-    'ContextoSeguridad',
-    'RolUsuario',
-    'Permiso',                ]
+    "access_control",
+    "access_control_simple",
+    "ContextoSeguridad",
+    "RolUsuario",
+    "Permiso",
+]

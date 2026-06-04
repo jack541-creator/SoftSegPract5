@@ -1,17 +1,31 @@
 """
 Decorador access_control para control de acceso basado en roles y permisos.
 """
+
 import functools
-from typing import Callable, Any, Optional, List, Set, Dict
+import logging
+from collections.abc import Callable
 from enum import Enum
 from datetime import datetime, UTC
+import uuid
+
+try:
+    from src.logger.hash_logging import anadir_al_log
+except ImportError:
+
+    def anadir_al_log(level: str, message: str) -> None:
+        """Fallback logger if hash_logging is unavailable."""
+        timestamp = datetime.now(UTC).isoformat()
+        logging.info("%s | %s | %s", timestamp, level.upper(), message)
 
 # =========================================================
 #  CONSTANTES
 # =========================================================
 
+
 class RolUsuario(str, Enum):
     """Roles de usuario para el control de acceso."""
+
     ADMIN = "admin"
     USUARIO = "usuario"
     INVITADO = "invitado"
@@ -20,34 +34,36 @@ class RolUsuario(str, Enum):
 
 class Permiso(str, Enum):
     """Permisos disponibles en el sistema."""
+
     # Credenciales
     CREAR_CREDENCIAL = "crear_credencial"
     LEER_CREDENCIAL = "leer_credencial"
     ACTUALIZAR_CREDENCIAL = "actualizar_credencial"
     ELIMINAR_CREDENCIAL = "eliminar_credencial"
-    
+
     # Usuarios
     CREAR_USUARIO = "crear_usuario"
     MODIFICAR_USUARIO = "modificar_usuario"
     ELIMINAR_USUARIO = "eliminar_usuario"
-    
+
     # OTPs
     GENERAR_OTP = "generar_otp"
     VERIFICAR_OTP = "verificar_otp"
-    
+
     # Auditoría
     VER_AUDITORIA = "ver_auditoria"
     EXPORTAR_AUDITORIA = "exportar_auditoria"
-    
+
     # Sistema
     CONFIGURAR_SISTEMA = "configurar_sistema"
     REINICIAR_SISTEMA = "reiniciar_sistema"
+
 
 # =========================================================
 #  MATRIZ DE PERMISOS POR ROL
 # =========================================================
 
-PERMISOS_POR_ROL: Dict[RolUsuario, Set[Permiso]] = {
+PERMISOS_POR_ROL: dict[RolUsuario, set[Permiso]] = {
     RolUsuario.ADMIN: {
         Permiso.CREAR_CREDENCIAL,
         Permiso.LEER_CREDENCIAL,
@@ -76,22 +92,25 @@ PERMISOS_POR_ROL: Dict[RolUsuario, Set[Permiso]] = {
         Permiso.EXPORTAR_AUDITORIA,
         Permiso.LEER_CREDENCIAL,
     },
-    RolUsuario.INVITADO: set(),}
+    RolUsuario.INVITADO: set(),
+}
 
 # =========================================================
 #  CONTEXTO DE SEGURIDAD
 # =========================================================
+
 
 class ContextoSeguridad:
     """
     Contexto de seguridad para la sesión actual.
     Almacena información del usuario autenticado y sus roles.
     """
+
     _instancia = None
-    _usuario_actual: Optional[str] = None
-    _rol_actual: Optional[RolUsuario] = None
-    _sesion_id: Optional[str] = None
-    _timestamp_inicio: Optional[datetime] = None
+    _usuario_actual: str | None = None
+    _rol_actual: RolUsuario | None = None
+    _sesion_id: str | None = None
+    _timestamp_inicio: datetime | None = None
 
     def __new__(cls):
         if cls._instancia is None:
@@ -113,15 +132,15 @@ class ContextoSeguridad:
         self._timestamp_inicio = None
 
     @property
-    def usuario_actual(self) -> Optional[str]:
+    def usuario_actual(self) -> str | None:
         return self._usuario_actual
 
     @property
-    def rol_actual(self) -> Optional[RolUsuario]:
+    def rol_actual(self) -> RolUsuario | None:
         return self._rol_actual
 
     @property
-    def sesion_id(self) -> Optional[str]:
+    def sesion_id(self) -> str | None:
         return self._sesion_id
 
     @property
@@ -136,21 +155,23 @@ class ContextoSeguridad:
 
     def _generar_sesion_id(self) -> str:
         """Genera un ID de sesión único."""
-        import uuid
         return str(uuid.uuid4())
+
 
 # =========================================================
 #  DECORADOR ACCESS_CONTROL
 # =========================================================
 
-def access_control(
-    permisos_requeridos: Optional[List[Permiso]] = None,
-    roles_requeridos: Optional[List[RolUsuario]] = None,
-    registrar_intentos: bool = True,):
 
+def access_control(
+    permisos_requeridos: list[Permiso] | None = None,
+    roles_requeridos: list[RolUsuario] | None = None,
+    registrar_intentos: bool = True,
+):
     # Manejar el caso @access_control sin paréntesis
     if callable(permisos_requeridos):
         func = permisos_requeridos
+
         # Crear un decorador con valores por defecto
         def decorador_simple(f):
             @functools.wraps(f)
@@ -160,39 +181,47 @@ def access_control(
                     error_msg = f"Acceso denegado: Usuario no autenticado para {f.__name__}"
                     raise PermissionError(error_msg)
                 return f(*args, **kwargs)
+
             return wrapper_simple
+
         return decorador_simple(func)
-    
+
     if permisos_requeridos is None:
         permisos_requeridos = []
     if roles_requeridos is None:
         roles_requeridos = []
-    
+
     def decorador(func: Callable) -> Callable:
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             ctx = ContextoSeguridad()
-            
+
             # verificar autenticación
             if not ctx.esta_autenticado:
                 error_msg = f"Acceso denegado: Usuario no autenticado para {func.__name__}"
                 if registrar_intentos:
-                    _registrar_intento_acceso(func.__name__, "DENEGADO", 
-                        f"Usuario no autenticado - {args}, {kwargs}")
+                    _registrar_intento_acceso(
+                        func.__name__,
+                        "DENEGADO",
+                        f"Usuario no autenticado - {args}, {kwargs}",
+                    )
                 raise PermissionError(error_msg)
-            
+
             # verificar roles
-            tiene_rol = False
             if roles_requeridos:
                 if ctx.rol_actual not in roles_requeridos:
-                    error_msg = (f"Acceso denegado: Rol '{ctx.rol_actual}' "
-                                f"no tiene permisos para {func.__name__}")
+                    error_msg = (
+                        f"Acceso denegado: Rol '{ctx.rol_actual}' "
+                        f"no tiene permisos para {func.__name__}"
+                    )
                     if registrar_intentos:
-                        _registrar_intento_acceso(func.__name__, "DENEGADO",
-                            f"Rol no autorizado - Rol actual: {ctx.rol_actual}")
+                        _registrar_intento_acceso(
+                            func.__name__,
+                            "DENEGADO",
+                            f"Rol no autorizado - Rol actual: {ctx.rol_actual}",
+                        )
                     raise PermissionError(error_msg)
-                tiene_rol = True
-            
+
             # verificar permisos
             tiene_permiso = False
             if permisos_requeridos:
@@ -200,21 +229,26 @@ def access_control(
                     if ctx.tiene_permiso(permiso):
                         tiene_permiso = True
                         break
-                
+
                 if not tiene_permiso:
                     permisos_str = ", ".join(p.value for p in permisos_requeridos)
-                    error_msg = (f"Acceso denegado: Usuario '{ctx.usuario_actual}' "
-                                f"no tiene permisos requeridos [{permisos_str}] "
-                                f"para {func.__name__}")
+                    error_msg = (
+                        f"Acceso denegado: Usuario '{ctx.usuario_actual}' "
+                        f"no tiene permisos requeridos [{permisos_str}] "
+                        f"para {func.__name__}"
+                    )
                     if registrar_intentos:
-                        _registrar_intento_acceso(func.__name__, "DENEGADO",
-                            f"Permisos insuficientes - Permisos requeridos: {permisos_str}")
+                        _registrar_intento_acceso(
+                            func.__name__,
+                            "DENEGADO",
+                            f"Permisos insuficientes - Permisos requeridos: {permisos_str}",
+                        )
                     raise PermissionError(error_msg)
-            
+
             if not roles_requeridos and not permisos_requeridos:
                 # solo requiere autenticación (ya verificada)
                 pass
-            
+
             # registrar acceso exitoso
             if registrar_intentos:
                 rol_permiso_info = ""
@@ -222,15 +256,18 @@ def access_control(
                     rol_permiso_info = f"Roles: {[r.value for r in roles_requeridos]}"
                 if permisos_requeridos:
                     rol_permiso_info += f" Permisos: {[p.value for p in permisos_requeridos]}"
-                
-                _registrar_intento_acceso(func.__name__, "PERMITIDO",
-                    f"Usuario: {ctx.usuario_actual}, Rol: {ctx.rol_actual}, {rol_permiso_info}" )
-            
+
+                _registrar_intento_acceso(
+                    func.__name__,
+                    "PERMITIDO",
+                    f"Usuario: {ctx.usuario_actual}, Rol: {ctx.rol_actual}, {rol_permiso_info}",
+                )
+
             # ejecutar la función original
             return func(*args, **kwargs)
-        
+
         return wrapper
-    
+
     return decorador
 
 
@@ -238,24 +275,16 @@ def access_control(
 #  FUNCIONES AUXILIARES
 # =========================================================
 
+
 def _registrar_intento_acceso(funcion: str, resultado: str, detalle: str) -> None:
-    """
-    Registra intentos de acceso (puede conectarse al sistema de logging).
-    """
-    try:
-        # usar el logger seguro si está disponible
-        from src.logger.hash_logging import anadir_al_log
-        anadir_al_log("info", f"ACCESS_CONTROL | {funcion} | {resultado} | {detalle}")
-    except ImportError:
-        # fallback a logging estándar
-        import logging
-        timestamp = datetime.now(UTC).isoformat()
-        logging.info(f"{timestamp} | ACCESS_CONTROL | {funcion} | {resultado} | {detalle}")
+    """Registra intentos de acceso usando el sistema de logging disponible."""
+    anadir_al_log("info", f"ACCESS_CONTROL | {funcion} | {resultado} | {detalle}")
 
 
 # =========================================================
 #  DECORADOR SIMPLIFICADO (para compatibilidad)
 # =========================================================
+
 
 # Versión simple del decorador (sin parámetros) para compatibilidad
 def simple_access_control(func: Callable) -> Callable:
@@ -264,5 +293,6 @@ def simple_access_control(func: Callable) -> Callable:
     Uso: @access_control (sin parámetros)
     """
     return access_control()(func)
+
 
 access_control_simple = simple_access_control

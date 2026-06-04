@@ -6,7 +6,6 @@ usando el ProxySeguro como guardián de acceso.
 from __future__ import annotations
 
 import icontract
-from typing import Optional
 
 from src.gestor_credenciales.gestor_credenciales import (
     GestorCredenciales,
@@ -15,7 +14,7 @@ from src.gestor_credenciales.gestor_credenciales import (
 from src.gestor_credenciales.proxy_seguro import (
     ProxySeguroGestorCredenciales,
     Sesion,
-    ErrorAutenticacion,   # viene del proxy_seguro, no del gestor
+    ErrorAutenticacion,  # viene del proxy_seguro, no del gestor
 )
 from src.ciphercoin.modelo import SistemaCipherCoin, Wallet
 
@@ -24,6 +23,7 @@ from src.ciphercoin.modelo import SistemaCipherCoin, Wallet
 # EXCEPCIÓN DE SESIÓN ciphercoin
 # =========================================================
 
+
 class ErrorSesionciphercoin(Exception):
     """Error durante autenticación o sesión en ciphercoin."""
 
@@ -31,6 +31,7 @@ class ErrorSesionciphercoin(Exception):
 # =========================================================
 # SESIÓN DE USUARIO ciphercoin
 # =========================================================
+
 
 class Sesionciphercoin:
     """
@@ -68,6 +69,7 @@ class Sesionciphercoin:
 # SERVICIO DE AUTENTICACIÓN
 # =========================================================
 
+
 class ServicioAutenticacion:
     """
     Orquesta el GestorCredenciales y el ProxySeguro para
@@ -86,7 +88,9 @@ class ServicioAutenticacion:
         self._sistema = sistema
 
         # GestorCredenciales: almacena las contraseñas
-        self._gestor = GestorCredenciales(clave_maestra=self._CLAVE_MAESTRA, log_file="ciphercoin_audit.log")
+        self._gestor = GestorCredenciales(
+            clave_maestra=self._CLAVE_MAESTRA, log_file="ciphercoin_audit.log"
+        )
 
         # ProxySeguro: controla el acceso por rol
         self._proxy = ProxySeguroGestorCredenciales(self._gestor)
@@ -95,7 +99,7 @@ class ServicioAutenticacion:
         self._usuario_a_wallet: dict[str, str] = {}
 
         # Sesión activa (solo una por instancia de GUI)
-        self._sesion_activa: Optional[Sesionciphercoin] = None
+        self._sesion_activa: Sesionciphercoin | None = None
 
         # Registrar los 4 wallets predefinidos
         self._registrar_wallets_predefinidos()
@@ -111,9 +115,9 @@ class ServicioAutenticacion:
         """
         wallets_config = [
             # (nombre_usuario, contraseña, rol_proxy, nombre_wallet)
-            ("estado",   "Estado#Coin2024!",  "admin",  "Estado ciphercoin"),
-            ("alice",    "Alice#Coin2024!",    "editor", "Alice (Usuario)"),
-            ("bob",      "Bob#Coin2024!",      "editor", "Bob (Usuario)"),
+            ("estado", "Estado#Coin2024!", "admin", "Estado ciphercoin"),
+            ("alice", "Alice#Coin2024!", "editor", "Alice (Usuario)"),
+            ("bob", "Bob#Coin2024!", "editor", "Bob (Usuario)"),
             ("techpyme", "TechPyme#Coin2024!", "editor", "TechPyme S.L."),
         ]
         for usuario, password, rol, nombre_wallet in wallets_config:
@@ -142,10 +146,14 @@ class ServicioAutenticacion:
     #  Login / Logout
     # ------------------------------------------------------------------
 
-    @icontract.require(lambda usuario: isinstance(usuario, str) and usuario.strip(),
-                       "El nombre de usuario no puede estar vacío")
-    @icontract.require(lambda password: isinstance(password, str) and password,
-                       "La contraseña no puede estar vacía")
+    @icontract.require(
+        lambda usuario: isinstance(usuario, str) and usuario.strip(),
+        "El nombre de usuario no puede estar vacío",
+    )
+    @icontract.require(
+        lambda password: isinstance(password, str) and password,
+        "La contraseña no puede estar vacía",
+    )
     def login(self, usuario: str, password: str) -> Sesionciphercoin:
         """
         Autentica al usuario y devuelve una Sesionciphercoin.
@@ -164,9 +172,7 @@ class ServicioAutenticacion:
 
         wallet_dir = self._usuario_a_wallet.get(usuario)
         if not wallet_dir:
-            raise ErrorSesionciphercoin(
-                f"No se encontró wallet para el usuario {usuario!r}"
-            )
+            raise ErrorSesionciphercoin(f"No se encontró wallet para el usuario {usuario!r}")
 
         wallet = self._sistema.obtener_wallet(wallet_dir)
         self._sesion_activa = Sesionciphercoin(sesion_proxy, wallet)
@@ -177,7 +183,7 @@ class ServicioAutenticacion:
         self._sesion_activa = None
 
     @property
-    def sesion_activa(self) -> Optional[Sesionciphercoin]:
+    def sesion_activa(self) -> Sesionciphercoin | None:
         return self._sesion_activa
 
     def esta_autenticado(self) -> bool:
@@ -191,7 +197,8 @@ class ServicioAutenticacion:
     def credenciales_demo() -> list[dict]:
         """Devuelve las credenciales predefinidas para mostrar en la GUI."""
         return [
-            {"usuario": "alice",    "password": "Alice#Coin2024!",    "rol": "Usuario"},
-            {"usuario": "bob",      "password": "Bob#Coin2024!",      "rol": "Usuario"},
+            {"usuario": "alice", "password": "Alice#Coin2024!", "rol": "Usuario"},
+            {"usuario": "bob", "password": "Bob#Coin2024!", "rol": "Usuario"},
             {"usuario": "techpyme", "password": "TechPyme#Coin2024!", "rol": "PYME"},
-            {"usuario": "estado",   "password": "Estado#Coin2024!",   "rol": "Admin"},   ]
+            {"usuario": "estado", "password": "Estado#Coin2024!", "rol": "Admin"},
+        ]
