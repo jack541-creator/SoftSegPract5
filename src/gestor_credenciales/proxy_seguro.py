@@ -226,14 +226,14 @@ class ProxySeguroGestorCredenciales:
         if not data or data["password"] != password:
             try:
                 anadir_al_log("info", f"{usuario} login -> denegado")
-            except Exception:
-                pass
+            except Exception as exc:
+                print(f"Error al registrar el intento de acceso denegado: {exc}")
             raise ErrorAutenticacion()
 
         try:
             anadir_al_log("info", f"{usuario} login -> permitido")
-        except Exception:
-            pass
+        except Exception as exc:
+            print(f"Error al registrar el inicio de sesión: {exc}")
         return Sesion(usuario=usuario)
 
     # -------------------------
