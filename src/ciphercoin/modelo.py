@@ -559,14 +559,57 @@ class SistemaCipherCoin:
     # Historial
     # ------------------------------------------------------------------
 
+    """
     def historial_wallet(self, direccion: str) -> list[dict]:
-        """Devuelve todas las transacciones en que participó la wallet."""
+        #Devuelve todas las transacciones en que participó la wallet.
         self._obtener_wallet_validada(direccion)  # valida existencia
         return [
             b["tx"]
             for b in self._blockchain.historial()
             if b["tx"]["origen"] == direccion or b["tx"]["destino"] == direccion
         ]
+    """
+
+    def historial_wallet(self, direccion: str) -> list[dict]:
+        """Devuelve todas las transacciones en que participó la wallet.
+        Para la wallet de estado también añade entradas sintéticas por las
+        comisiones cobradas en cada transferencia (origen -> estado).
+        """
+        self._obtener_wallet_validada(direccion)  # valida existencia
+
+        bloques = self._blockchain.historial()
+        txs = [b["tx"] for b in bloques if b["tx"]["origen"] == direccion or b["tx"]["destino"] == direccion]
+
+        # Si se solicita la historia de la wallet de estado, añadir entradas
+        # que representen las comisiones cobradas en cada transferencia.
+        try:
+            estado_dir = self.wallet_estado().direccion
+        except ErrorWalletNoEncontrada:
+            return txs
+
+        if direccion == estado_dir:
+            for b in bloques:
+                tx = b["tx"]
+                com = float(tx.get("comision", 0.0))
+                if com > 0:
+                    # generar una entrada sintética: origen=remitente original, destino=estado,
+                    # importe=0.0, comision=valor_de_la_comision (para que la columna 'Comisión'
+                    # muestre la cantidad cobrada)
+                    synthetic_payload = {
+                        "origen": tx["origen"],
+                        "destino": estado_dir,
+                        "importe": com,
+                        "comision": 0.0,
+                        "timestamp": tx["timestamp"],
+                    }
+                    # crear un tx_id determinista para la entrada sintética
+                    synthetic_tx_id = hashlib.sha256(
+                        json.dumps(synthetic_payload, sort_keys=True).encode("utf-8")
+                    ).hexdigest()
+                    synthetic_payload["tx_id"] = synthetic_tx_id
+                    txs.append(synthetic_payload)
+
+        return txs
 
     def historial_completo(self) -> list[dict]:
         """Devuelve toda la blockchain como lista de dicts."""
