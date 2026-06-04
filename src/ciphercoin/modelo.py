@@ -118,6 +118,8 @@ class Wallet:
     saldo: float = 0.0
     reputacion: int = 0
 
+    SALDO_MAXIMO = 100.0
+
     def __post_init__(self):
         if not isinstance(self.direccion, str) or self.direccion.strip() == "":
             raise ErrorTransaccionInvalida("La dirección de la wallet no puede estar vacía")
@@ -128,7 +130,13 @@ class Wallet:
         if not isinstance(self.tipo, TipoWallet):
             raise ErrorTransaccionInvalida("El tipo de wallet no es válido")
 
-        if not isinstance(self.saldo, int | float) or self.saldo < 0:
+        if not isinstance(self.saldo, int | float):
+            raise ErrorTransaccionInvalida("El saldo inicial debe ser numérico")
+
+        if self.saldo > self.SALDO_MAXIMO:
+            raise ErrorTransaccionInvalida(f"El saldo inicial no puede superar {self.SALDO_MAXIMO:.0f} monedas")
+
+        if self.saldo < 0:
             raise ErrorSaldoInsuficiente("El saldo inicial no puede ser negativo")
 
         if not isinstance(self.reputacion, int) or self.reputacion < 0:
@@ -172,7 +180,10 @@ class Wallet:
     )
     def ingresar(self, cantidad: float) -> None:
         """Se ingresan monedas en la cartera"""
-        self.saldo = round(self.saldo + cantidad, 8)
+        nuevo_saldo = round(self.saldo + cantidad, 8)
+        if nuevo_saldo > self.SALDO_MAXIMO:
+            raise ErrorTransaccionInvalida(f"La wallet no puede superar {self.SALDO_MAXIMO:.0f} monedas")
+        self.saldo = nuevo_saldo
 
     @icontract.require(
         lambda cantidad: isinstance(cantidad, int | float) and cantidad > 0,
@@ -441,7 +452,7 @@ class SistemaCipherCoin:
     def _inicializar_wallets(self) -> None:
         """crea los cuatro wallets del ecosistema con fondos iniciales."""
         definiciones = [
-            ("Estado ciphercoin", TipoWallet.ESTADO, 100.0),
+            ("Estado ciphercoin", TipoWallet.ESTADO, 50.0),
             ("Alice (Usuario)", TipoWallet.USUARIO, 25.0),
             ("Bob (Usuario)", TipoWallet.USUARIO, 25.0),
             ("TechPyme S.L.", TipoWallet.PYME, 50.0),
@@ -523,10 +534,19 @@ class SistemaCipherCoin:
                 f"disponible {origen.saldo:.4f}"
             )
 
+        if destino.saldo + importe > Wallet.SALDO_MAXIMO:
+            raise ErrorTransaccionInvalida(
+                f"La wallet destino superaría el límite de {Wallet.SALDO_MAXIMO:.0f} monedas")
+
+        estado = self.wallet_estado()
+        if estado.saldo + comision > Wallet.SALDO_MAXIMO:
+            raise ErrorTransaccionInvalida(
+                f"La wallet de estado superaría el límite de {Wallet.SALDO_MAXIMO:.0f} monedas")
+
         # Ejecutar movimientos
         origen.saldo = round(origen.saldo - total, 8)
         destino.saldo = round(destino.saldo + importe, 8)
-        self.wallet_estado().saldo = round(self.wallet_estado().saldo + comision, 8)
+        estado.saldo = round(estado.saldo + comision, 8)
 
         # Reputación: solo si el remitente es USUARIO y el destino es PYME
         if origen.tipo == TipoWallet.USUARIO and destino.tipo == TipoWallet.PYME:
