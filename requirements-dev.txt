@@ -5,3 +5,4 @@ icontract
 string
 random
 hypothesis
+matplotlib
