@@ -13,7 +13,7 @@ Sistema de criptomoneda con interfaz gráfica, gestor de credenciales integrado,
 
 Dependecnias
 ```bash
-pip install icontract bcrypt
+pip install -r requirements-dev.txt
 ```
 
 ---

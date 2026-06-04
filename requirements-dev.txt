@@ -5,5 +5,3 @@ icontract
 string
 random
 hypothesis
-pylint
-ruff
