@@ -1,0 +1,91 @@
+Run started:2026-06-09 22:07:20.420742+00:00
+
+Test results:
+>> Issue: [B105:hardcoded_password_string] Possible hardcoded password: 'Alice#Coin2024!'
+   Severity: Low   Confidence: Medium
+   CWE: CWE-259 (https://cwe.mitre.org/data/definitions/259.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b105_hardcoded_password_string.html
+   Location: src/ciphercoin/autenticacion.py:200:33
+199	        return [
+200	            {"usuario": "alice", "password": "Alice#Coin2024!", "rol": "Usuario"},
+201	            {"usuario": "bob", "password": "Bob#Coin2024!", "rol": "Usuario"},
+
+--------------------------------------------------
+>> Issue: [B105:hardcoded_password_string] Possible hardcoded password: 'Bob#Coin2024!'
+   Severity: Low   Confidence: Medium
+   CWE: CWE-259 (https://cwe.mitre.org/data/definitions/259.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b105_hardcoded_password_string.html
+   Location: src/ciphercoin/autenticacion.py:201:31
+200	            {"usuario": "alice", "password": "Alice#Coin2024!", "rol": "Usuario"},
+201	            {"usuario": "bob", "password": "Bob#Coin2024!", "rol": "Usuario"},
+202	            {"usuario": "techpyme", "password": "TechPyme#Coin2024!", "rol": "PYME"},
+
+--------------------------------------------------
+>> Issue: [B105:hardcoded_password_string] Possible hardcoded password: 'TechPyme#Coin2024!'
+   Severity: Low   Confidence: Medium
+   CWE: CWE-259 (https://cwe.mitre.org/data/definitions/259.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b105_hardcoded_password_string.html
+   Location: src/ciphercoin/autenticacion.py:202:36
+201	            {"usuario": "bob", "password": "Bob#Coin2024!", "rol": "Usuario"},
+202	            {"usuario": "techpyme", "password": "TechPyme#Coin2024!", "rol": "PYME"},
+203	            {"usuario": "estado", "password": "Estado#Coin2024!", "rol": "Admin"},
+
+--------------------------------------------------
+>> Issue: [B105:hardcoded_password_string] Possible hardcoded password: 'Estado#Coin2024!'
+   Severity: Low   Confidence: Medium
+   CWE: CWE-259 (https://cwe.mitre.org/data/definitions/259.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b105_hardcoded_password_string.html
+   Location: src/ciphercoin/autenticacion.py:203:34
+202	            {"usuario": "techpyme", "password": "TechPyme#Coin2024!", "rol": "PYME"},
+203	            {"usuario": "estado", "password": "Estado#Coin2024!", "rol": "Admin"},
+204	        ]
+
+--------------------------------------------------
+>> Issue: [B105:hardcoded_password_string] Possible hardcoded password: ''
+   Severity: Low   Confidence: Medium
+   CWE: CWE-259 (https://cwe.mitre.org/data/definitions/259.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b105_hardcoded_password_string.html
+   Location: src/gestor_credenciales/gestor_credenciales.py:211:56
+210	    def verificar_fortaleza(self, password: str) -> FortalezaPassword:
+211	        if not isinstance(password, str) or password == "":
+212	            raise ErrorPoliticaPassword()
+
+--------------------------------------------------
+>> Issue: [B311:blacklist] Standard pseudo-random generators are not suitable for security/cryptographic purposes.
+   Severity: Low   Confidence: High
+   CWE: CWE-330 (https://cwe.mitre.org/data/definitions/330.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_calls.html#b311-random
+   Location: src/gestor_credenciales/gestor_credenciales.py:608:26
+607	        while len(otps) < cantidad:
+608	            otp = "".join(random.choice(caracteres) for _ in range(6))
+609	
+
+--------------------------------------------------
+>> Issue: [B311:blacklist] Standard pseudo-random generators are not suitable for security/cryptographic purposes.
+   Severity: Low   Confidence: High
+   CWE: CWE-330 (https://cwe.mitre.org/data/definitions/330.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_calls.html#b311-random
+   Location: src/gestor_credenciales/gestor_credenciales.py:671:24
+670	        caracteres = string.ascii_letters + string.digits
+671	        token = "".join(random.choice(caracteres) for _ in range(16))
+672	
+
+--------------------------------------------------
+
+Code scanned:
+	Total lines of code: 2511
+	Total lines skipped (#nosec): 0
+	Total potential issues skipped due to specifically being disabled (e.g., #nosec BXXX): 0
+
+Run metrics:
+	Total issues (by severity):
+		Undefined: 0
+		Low: 7
+		Medium: 0
+		High: 0
+	Total issues (by confidence):
+		Undefined: 0
+		Low: 0
+		Medium: 5
+		High: 2
+Files skipped (0):

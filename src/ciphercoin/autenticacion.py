@@ -135,7 +135,7 @@ class ServicioAutenticacion:
             # Registrar en el ProxySeguro
             try:
                 self._proxy.registrar_usuario_proxy(usuario, password, rol)
-            except Exception:
+            except ValueError:
                 pass  # ya registrado
 
             # Mapear usuario → dirección de wallet
