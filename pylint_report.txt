@@ -1,0 +1,49 @@
+************* Module src.logger.log_util
+src/logger/log_util.py:89:0: R0911: Too many return statements (7/6) (too-many-return-statements)
+src/logger/log_util.py:120:0: R0911: Too many return statements (8/6) (too-many-return-statements)
+************* Module src.logger
+src/logger/__init__.py:33:4: E0603: Undefined variable name 'SecureLogManager' in __all__ (undefined-all-variable)
+src/logger/__init__.py:34:4: E0603: Undefined variable name 'MonitorFunciones' in __all__ (undefined-all-variable)
+************* Module src.logger.access_control
+src/logger/access_control.py:196:8: R0912: Too many branches (14/12) (too-many-branches)
+************* Module src.gestor_credenciales.gestor_credenciales
+src/gestor_credenciales/gestor_credenciales.py:422:4: R0917: Too many positional arguments (6/5) (too-many-positional-arguments)
+src/gestor_credenciales/gestor_credenciales.py:665:8: W0622: Redefining built-in 'hash' (redefined-builtin)
+************* Module src.gestor_credenciales.proxy_seguro
+src/gestor_credenciales/proxy_seguro.py:65:15: W0212: Access to a protected member _usuarios of a client class (protected-access)
+src/gestor_credenciales/proxy_seguro.py:85:15: W0212: Access to a protected member _usuarios of a client class (protected-access)
+src/gestor_credenciales/proxy_seguro.py:229:19: W0718: Catching too general exception Exception (broad-exception-caught)
+src/gestor_credenciales/proxy_seguro.py:235:15: W0718: Catching too general exception Exception (broad-exception-caught)
+************* Module src.ciphercoin.modelo
+src/ciphercoin/modelo.py:379:9: W0511: Todo correcto, dejamos pasar la llamada al método real (fixme)
+src/ciphercoin/modelo.py:212:4: W0105: String statement has no effect (pointless-string-statement)
+src/ciphercoin/modelo.py:371:29: W0212: Access to a protected member _wallets of a client class (protected-access)
+src/ciphercoin/modelo.py:374:30: W0212: Access to a protected member _wallets of a client class (protected-access)
+src/ciphercoin/modelo.py:390:62: W0212: Access to a protected member _wallets of a client class (protected-access)
+src/ciphercoin/modelo.py:390:12: W0212: Access to a protected member _wallets of a client class (protected-access)
+src/ciphercoin/modelo.py:393:64: W0212: Access to a protected member _wallets of a client class (protected-access)
+src/ciphercoin/modelo.py:393:12: W0212: Access to a protected member _wallets of a client class (protected-access)
+src/ciphercoin/modelo.py:396:8: W0212: Access to a protected member _auditoria of a client class (protected-access)
+src/ciphercoin/modelo.py:412:15: W0212: Access to a protected member _blockchain of a client class (protected-access)
+src/ciphercoin/modelo.py:413:12: W0212: Access to a protected member _auditoria of a client class (protected-access)
+src/ciphercoin/modelo.py:588:4: W0105: String statement has no effect (pointless-string-statement)
+src/ciphercoin/modelo.py:610:15: R1714: Consider merging these comparisons with 'in' by using 'direccion in (b['tx']['origen'], b['tx']['destino'])'. Use a set instead if elements are hashable. (consider-using-in)
+************* Module src.ciphercoin.autenticacion
+src/ciphercoin/autenticacion.py:138:19: W0718: Catching too general exception Exception (broad-exception-caught)
+src/ciphercoin/autenticacion.py:170:16: W0707: Consider explicitly re-raising using 'raise ErrorSesionciphercoin('Usuario o contraseña incorrectos.') from e' (raise-missing-from)
+src/ciphercoin/autenticacion.py:171:12: W0707: Consider explicitly re-raising using 'raise ErrorSesionciphercoin('Usuario o contraseña incorrectos.') from e' (raise-missing-from)
+************* Module src.ciphercoin.gui
+src/ciphercoin/gui.py:1:0: C0302: Too many lines in module (1070/1000) (too-many-lines)
+src/ciphercoin/gui.py:81:0: R0917: Too many positional arguments (6/5) (too-many-positional-arguments)
+src/ciphercoin/gui.py:141:0: R0901: Too many ancestors (9/7) (too-many-ancestors)
+src/ciphercoin/gui.py:144:4: R0913: Too many arguments (8/6) (too-many-arguments)
+src/ciphercoin/gui.py:144:4: R0917: Too many positional arguments (8/5) (too-many-positional-arguments)
+src/ciphercoin/gui.py:495:12: W0201: Attribute '_var_rep' defined outside __init__ (attribute-defined-outside-init)
+src/ciphercoin/gui.py:657:0: R0902: Too many instance attributes (9/7) (too-many-instance-attributes)
+src/ciphercoin/gui.py:813:15: W0718: Catching too general exception Exception (broad-exception-caught)
+src/ciphercoin/gui.py:916:4: R0914: Too many local variables (17/15) (too-many-locals)
+src/ciphercoin/gui.py:1045:15: W0718: Catching too general exception Exception (broad-exception-caught)
+
+------------------------------------------------------------------
+Your code has been rated at 9.68/10 (previous run: 9.14/10, +0.54)
+

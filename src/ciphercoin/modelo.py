@@ -134,7 +134,9 @@ class Wallet:
             raise ErrorTransaccionInvalida("El saldo inicial debe ser numérico")
 
         if self.saldo > self.SALDO_MAXIMO:
-            raise ErrorTransaccionInvalida(f"El saldo inicial no puede superar {self.SALDO_MAXIMO:.0f} monedas")
+            raise ErrorTransaccionInvalida(
+                f"El saldo inicial no puede superar {self.SALDO_MAXIMO:.0f} monedas"
+            )
 
         if self.saldo < 0:
             raise ErrorSaldoInsuficiente("El saldo inicial no puede ser negativo")
@@ -182,7 +184,9 @@ class Wallet:
         """Se ingresan monedas en la cartera"""
         nuevo_saldo = round(self.saldo + cantidad, 8)
         if nuevo_saldo > self.SALDO_MAXIMO:
-            raise ErrorTransaccionInvalida(f"La wallet no puede superar {self.SALDO_MAXIMO:.0f} monedas")
+            raise ErrorTransaccionInvalida(
+                f"La wallet no puede superar {self.SALDO_MAXIMO:.0f} monedas"
+            )
         self.saldo = nuevo_saldo
 
     @icontract.require(
@@ -536,12 +540,14 @@ class SistemaCipherCoin:
 
         if destino.saldo + importe > Wallet.SALDO_MAXIMO:
             raise ErrorTransaccionInvalida(
-                f"La wallet destino superaría el límite de {Wallet.SALDO_MAXIMO:.0f} monedas")
+                f"La wallet destino superaría el límite de {Wallet.SALDO_MAXIMO:.0f} monedas"
+            )
 
         estado = self.wallet_estado()
         if estado.saldo + comision > Wallet.SALDO_MAXIMO:
             raise ErrorTransaccionInvalida(
-                f"La wallet de estado superaría el límite de {Wallet.SALDO_MAXIMO:.0f} monedas")
+                f"La wallet de estado superaría el límite de {Wallet.SALDO_MAXIMO:.0f} monedas"
+            )
 
         # Ejecutar movimientos
         origen.saldo = round(origen.saldo - total, 8)
@@ -598,7 +604,11 @@ class SistemaCipherCoin:
         self._obtener_wallet_validada(direccion)  # valida existencia
 
         bloques = self._blockchain.historial()
-        txs = [b["tx"] for b in bloques if b["tx"]["origen"] == direccion or b["tx"]["destino"] == direccion]
+        txs = [
+            b["tx"]
+            for b in bloques
+            if b["tx"]["origen"] == direccion or b["tx"]["destino"] == direccion
+        ]
 
         # Si se solicita la historia de la wallet de estado, añadir entradas
         # que representen las comisiones cobradas en cada transferencia.
